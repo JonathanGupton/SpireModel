@@ -10,7 +10,7 @@ from SpireModel.components import CHARACTERS
 from SpireModel.components import POTIONS
 from SpireModel.components import PATHS
 
-
+## Combine all the collections, sort them, then map the token to the sorted index value
 TOKEN_COLLECTION = sorted(
     [
         *BASE_TOKENS
