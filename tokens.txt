@@ -1,0 +1,104 @@
+# Notes:
+
+- filename | play_id | character_chosen | victory
+
+# Tokens:
+[Character] -> 4
+[N] -> Tokenize each number 0-9 -> 10
+Acquire [N] Gold -> 3
+Acquire [Card] -> 1 + 370
+Skip [Card][N (upgrade)] - > 1
+Remove [Card][N (upgrade)] -> 1
+Remove [Card][N (upgrade)] -> 0
+Upgrade [Card][N (upgrade)] -> 1
+Rest -> 1
+Acquire [Potion] -> 42
+Use [Potion] -> 1
+Remove [Potion] -> 0
+Gain [N] Health -> 2
+Lose [N] Health -> 1
+Campfire -> 1
+Acquire [Relic] -> 179 (# of relics)
+Remove [Relic] -> 0
+Skip [Relic] -> 0
+[Increase] [N] [Max] Health -> 2
+[Decrease] [N] [Max] Health -> 1
+[Increase] [N] [Max] Potion-Slots -> 1
+[Decrease] [N] [Max] Potion-Slots -> 0
+Path ["M", "?", "E", "$", "T", "R", "B"] -> 8
+[Neow Bonus] -> 13?
+[Event] -> 67
+
+4 + 10 + 3 + 371 + 1 + 1 + 1 + 1 + 42 + 1 + 2 + 1 + 1 + 179 + 2 + 1 + 1 + 8 + 66 + 13
+
+709 total tokens
+
+
+# Tokenize:
+
+Create a process that reads in specific values in a specific order from the json file
+
+0   character
+    ascension mode #
+1   add cards
+...
+9   add starting relic
+10 neow bonus
+11 apply neow bonus
+path[0]
+
+
+def get_character(data):
+
+
+
+floor_reached -> counter
+master_deck -> counter
+relics -> counter
+damage_taken -> enemies -> dict[enemy] : list[damage]
+potions_obtained -> "key" -> dict[potion name] : list [ floor]
+path_per_floor -> set of values
+items_purchased -> set[values]
+neow_bonus -> set[values]
+build_version -> set[values]
+purchased_purges -> counter
+event_choices -> event_name -> counter
+
+store as pkl file
+
+
+
+Threaded: 8:36 - 10:12 to finish or 5797.19 seconds
+
+
+
+
+"neow_cost",
+"is_trial",
+"character_chosen",
+"is_prod",
+"is_daily",
+"chose_seed",
+"circlet_count",
+"win_rate",
+"is_beta",
+"is_endless",
+"special_seed"
+
+
+filter out daily_mods
+filter out neow_cos3
+
+Write script to find circlet_count != 0, print the filename and circle count
+
+
+Filter out:
+neow_cost == ""
+neow_cost == "FIFTY_PERCENT_DAMAGE"
+neow_cost == "BASIC_CARDS"
+character_chosen == 'SCHOLAR'
+chose_seed == True
+circlet_count != 0
+is_beta == True
+special_seed != 0
+
