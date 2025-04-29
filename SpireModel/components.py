@@ -1096,3 +1096,5 @@ POTIONS = {
     "GamblersBrew",
     "CultistPotion",
 }
+
+PATHS = {"$", "?", "B", "E", "M", "R", "T"}
