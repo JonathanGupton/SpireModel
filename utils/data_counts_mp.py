@@ -82,6 +82,7 @@ def process_log_file(filepath: Path):
         "damage_taken_by_enemy": defaultdict(Counter),
         "potions_obtained": defaultdict(Counter),
         "floors_visited": set(),
+        "path_per_floor_counts": Counter(),  # <-- ADDED: Initialize new counter
         "items_purchased": set(),
         "neow_bonus": Counter(),
         "build_version": set(),
@@ -101,9 +102,9 @@ def process_log_file(filepath: Path):
         # --- Metadata ---
         "processed_logs_count": 0,
         "modded_logs_skipped": 0,
-        "modded_reasons": Counter(),  # ADDED: To count reasons for skipping
-        "errors": 0,  # Errors within individual log entries
-        "filter_errors": 0,  # Errors specifically during the mod check call
+        "modded_reasons": Counter(),
+        "errors": 0,
+        "filter_errors": 0,
     }
     processed_logs = 0
     modded_logs = 0
@@ -124,8 +125,8 @@ def process_log_file(filepath: Path):
                 logging.warning(
                     f"Expected list/dict of logs, got {type(logs)} in {filepath}"
                 )
-                file_data["errors"] += 1  # Count as a file structure error
-                return file_data  # Or None? Returning data might be better here.
+                file_data["errors"] += 1
+                return file_data
 
         for log in logs:
             if not isinstance(log, dict) or "event" not in log:
@@ -138,35 +139,27 @@ def process_log_file(filepath: Path):
                 continue
 
             # === MODIFIED MOD CHECK ===
-            mod_reason = None  # Default to not modded
+            mod_reason = None
             try:
-                # Use the new function that returns the reason
                 mod_reason = get_modded_reason(data)
             except Exception as e:
-                # Log error during the filter check itself
                 logging.warning(
                     f"Error during mod check in {filepath}: {e}", exc_info=False
-                )  # Keep log brief
-                # logging.exception(f"Full traceback for mod check error in {filepath}") # Uncomment for debug
+                )
                 filter_errors += 1
-                # Decide how to handle filter errors: skip the log or process anyway?
-                # Let's skip it for safety, as we couldn't verify it.
-                mod_reason = "filter_check_error"  # Assign a reason for skipping
+                mod_reason = "filter_check_error"
 
-            # If a reason was found (log is modded or filter error occurred)
             if mod_reason is not None:
                 modded_logs += 1
-                file_data["modded_reasons"][
-                    mod_reason
-                ] += 1  # Count the specific reason
-                continue  # Skip to the next log entry
+                file_data["modded_reasons"][mod_reason] += 1
+                continue
             # === END MODIFIED MOD CHECK ===
 
-            # --- If we reach here, the log is NOT modded ---
             processed_logs += 1
 
             # --- Data Extraction (Keep all the try/except blocks as before) ---
-            # (Existing extraction logic for floor_reached, master_deck, ..., special_seed)
+            # (Existing extraction logic for floor_reached, master_deck, etc.)
+            # ... (all previous try/except blocks for other fields remain unchanged) ...
             try:
                 floor = data.get("floor_reached")
                 file_data["floor_reached"][floor] += 1 if floor is not None else 0
@@ -216,9 +209,12 @@ def process_log_file(filepath: Path):
                                     pass
             except Exception:
                 pass
+
+            # --- MODIFIED: Process path_per_floor ---
             try:
                 path = data.get("path_per_floor")
                 if isinstance(path, list):
+                    # Keep original logic for floors_visited set
                     file_data["floors_visited"].update(
                         {
                             f
@@ -226,8 +222,17 @@ def process_log_file(filepath: Path):
                             if isinstance(f, (str, int, float, tuple, type(None)))
                         }
                     )
-            except Exception:
+                    # --- ADDED: Count string occurrences in path_per_floor ---
+                    for item in path:
+                        if isinstance(item, str):
+                            file_data["path_per_floor_counts"][item] += 1
+                    # --- END ADDED ---
+            except Exception as e:
+                # Optional: Log if needed, but pass to avoid crashing on one field
+                # logging.warning(f"Error processing path_per_floor in {filepath} for a log: {e}")
                 pass
+            # --- END MODIFIED ---
+
             try:
                 items = data.get("items_purchased")
                 if isinstance(items, list):
@@ -332,11 +337,9 @@ def process_log_file(filepath: Path):
         return None
     except orjson.JSONDecodeError as e:
         logging.error(f"Failed JSON parse: {filepath} - {e}")
-        # Return None, don't add partial data which might be corrupt
         return None
     except Exception as e:
         logging.exception(f"Unexpected error processing file {filepath}: {e}")
-        # Log the full traceback for unexpected errors
         return None
 
 
@@ -353,6 +356,7 @@ def aggregate_results(all_results):
         "damage_taken_by_enemy": defaultdict(Counter),
         "potions_obtained": defaultdict(Counter),
         "floors_visited": set(),
+        "path_per_floor_counts": Counter(),  # <-- ADDED: Initialize aggregated counter
         "items_purchased": set(),
         "neow_bonus": Counter(),
         "build_version": set(),
@@ -372,9 +376,9 @@ def aggregate_results(all_results):
         # --- Metadata ---
         "_total_processed_logs": 0,
         "_total_modded_logs_skipped": 0,
-        "_total_modded_reasons": Counter(),  # ADDED: Aggregate modded reasons
-        "_total_data_errors_in_logs": 0,  # Renamed for clarity
-        "_total_filter_errors": 0,  # ADDED: Aggregate filter errors
+        "_total_modded_reasons": Counter(),
+        "_total_data_errors_in_logs": 0,
+        "_total_filter_errors": 0,
         "_files_processed_successfully": 0,
         "_files_failed_processing": 0,
     }
@@ -394,17 +398,12 @@ def aggregate_results(all_results):
             "modded_logs_skipped", 0
         )
         final_data["_total_data_errors_in_logs"] += file_result.get("errors", 0)
-        final_data["_total_filter_errors"] += file_result.get(
-            "filter_errors", 0
-        )  # Aggregate filter errors
-
-        # ADDED: Aggregate modded reasons
+        final_data["_total_filter_errors"] += file_result.get("filter_errors", 0)
         final_data["_total_modded_reasons"].update(
             file_result.get("modded_reasons", Counter())
         )
 
         # --- Aggregate all data fields (Counters, Sets, defaultdicts) ---
-        # (Keep existing aggregation logic)
         final_data["floor_reached"].update(file_result.get("floor_reached", Counter()))
         final_data["master_deck"].update(file_result.get("master_deck", Counter()))
         final_data["relics"].update(file_result.get("relics", Counter()))
@@ -427,6 +426,12 @@ def aggregate_results(all_results):
         final_data["is_endless"].update(file_result.get("is_endless", Counter()))
         final_data["special_seed"].update(file_result.get("special_seed", Counter()))
 
+        # --- ADDED: Aggregate the new counter ---
+        final_data["path_per_floor_counts"].update(
+            file_result.get("path_per_floor_counts", Counter())
+        )
+        # --- END ADDED ---
+
         final_data["floors_visited"].update(file_result.get("floors_visited", set()))
         final_data["items_purchased"].update(file_result.get("items_purchased", set()))
         final_data["build_version"].update(file_result.get("build_version", set()))
@@ -444,11 +449,12 @@ def aggregate_results(all_results):
         # --- End Aggregation of data fields ---
 
     logging.info("Aggregation complete.")
+    # (Keep existing logging for metadata totals)
     logging.info(
-        f"Total non-modded logs processed: {final_data['_total_processed_logs']}"
+        f"Total non-modded logs processed: {final_data['_total_processed_logs']:_}"
     )
     logging.info(
-        f"Total modded logs skipped: {final_data['_total_modded_logs_skipped']}"
+        f"Total modded logs skipped: {final_data['_total_modded_logs_skipped']:_}"
     )
     if final_data["_total_data_errors_in_logs"] > 0:
         logging.warning(
@@ -463,24 +469,22 @@ def aggregate_results(all_results):
             f"Total files failed processing (read/JSON errors): {final_data['_files_failed_processing']}"
         )
 
-    # Log the breakdown of modded reasons
     if final_data["_total_modded_reasons"]:
         logging.info("Breakdown of reasons for skipping modded logs:")
-        # Sort by count descending for clarity
         sorted_reasons = sorted(
             final_data["_total_modded_reasons"].items(),
             key=lambda item: item[1],
             reverse=True,
         )
         for reason, count in sorted_reasons:
-            logging.info(f"  - {reason}: {count}")
+            logging.info(f"  - {reason}: {count:_}")
     else:
         logging.info("No logs were skipped due to modding flags.")
 
     return final_data
 
 
-# --- Main Execution (Largely the same, ensures updated functions are called) ---
+# --- Main Execution (Unchanged) ---
 if __name__ == "__main__":
     start_time = time.time()
     logging.info(f"Starting log processing using up to {MAX_WORKERS} processes.")
@@ -507,16 +511,8 @@ if __name__ == "__main__":
 
     logging.info(f"Submitting {num_files} file processing tasks to Pool...")
     try:
-        # It's often beneficial to set a chunksize, especially for many small tasks
-        # Adjust based on file size / processing time per file
-        # chunksize = max(1, num_files // (MAX_WORKERS * 4)) # Example heuristic
-        # logging.info(f"Using chunksize: {chunksize}") # Optional log
-        # results_iterator = pool.imap_unordered(process_log_file, files_to_process, chunksize=chunksize)
-
         with Pool(processes=MAX_WORKERS) as pool:
-            results_iterator = pool.imap_unordered(
-                process_log_file, files_to_process
-            )  # Keep simple for now
+            results_iterator = pool.imap_unordered(process_log_file, files_to_process)
 
             for result in results_iterator:
                 total_files_iterator_handled += 1
@@ -544,9 +540,7 @@ if __name__ == "__main__":
     )
 
     if results_from_workers:
-        final_aggregated_data = aggregate_results(
-            results_from_workers
-        )  # Calls updated aggregation
+        final_aggregated_data = aggregate_results(results_from_workers)
 
         logging.info(f"Saving aggregated data to {OUTPUT_PICKLE_FILE}...")
         try:
