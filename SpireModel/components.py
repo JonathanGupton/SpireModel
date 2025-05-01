@@ -1,23 +1,45 @@
 NUMBERS = {str(i) for i in range(10)}
 
-BASE_TOKENS = {
+
+CARD_ACTIONS = (
     "ACQUIRE",
     "SKIP",
     "REMOVE",
     "UPGRADE",
-    "REST",
+)
+POTION_ACTIONS = {
+    "ACQUIRE",
     "USE",
-    "GAIN",
-    "LOSE",
+    "REMOVE",
+}
+RELIC_ACTIONS = {"ACQUIRE", "REMOVE", "SKIP"}
+
+HEALTH_ACTIONS = {
+    "INCREASE MAX HEALTH",
+    "DECREASE MAX HEALTH",
+    "GAIN HEALTH",
+    "LOSE HEALTH",
+}
+POTION_SLOT_ACTIONS = {
+    "INCREASE MAX POTION SLOTS",
+    "DECREASE MAX POTION SLOTS",
+}
+
+PATH_ACTIONS = {"GO TO"}
+
+GOLD_ACTIONS = {
+    "INCREASE GOLD",
+    "DECREASE GOLD",
+    "SPEND GOLD",
+}
+
+BASE_TOKENS = {
+    "REST",
     "CAMPFIRE",
-    "INCREASE",
-    "DECREASE",
-    "MAX",
-    "PATH",
     "NEOW BONUS",
+    "NEOW COST",
     "EVENT",
     "ASCENSION MODE",
-    "GOLD",
 }
 
 CURSECARDS = {
