@@ -1,18 +1,35 @@
+from functools import partial
+
+
+def add_word(second: str, first: str) -> str:
+    return f"{first} {second}"
+
+
+acquire = partial(add_word, first="ACQUIRE")
+decrease = partial(add_word, first="DECREASE")
+go_to = partial(add_word, first="GO TO")
+increase = partial(add_word, first="INCREASE")
+remove = partial(add_word, first="REMOVE")
+skip = partial(add_word, first="SKIP")
+spend = partial(add_word, first="SPEND")
+upgrade = partial(add_word, first="UPGRADE")
+use = partial(add_word, first="USE")
+
 NUMBERS = {str(i) for i in range(10)}
 
 
 CARD_ACTIONS = (
-    "ACQUIRE",
-    "SKIP",
-    "REMOVE",
-    "UPGRADE",
+    acquire,
+    skip,
+    remove,
+    upgrade,
 )
 POTION_ACTIONS = {
-    "ACQUIRE",
-    "USE",
-    "REMOVE",
+    acquire,
+    use,
+    remove,
 }
-RELIC_ACTIONS = {"ACQUIRE", "REMOVE", "SKIP"}
+RELIC_ACTIONS = {acquire, remove, skip}
 
 HEALTH_ACTIONS = {
     "INCREASE MAX HEALTH",
