@@ -6,6 +6,7 @@ def add_word(second: str, first: str) -> str:
 
 
 acquire = partial(add_word, first="ACQUIRE")
+battle = partial(add_word, first="BATTLE")
 decrease = partial(add_word, first="DECREASE")
 go_to = partial(add_word, first="GO TO")
 increase = partial(add_word, first="INCREASE")
