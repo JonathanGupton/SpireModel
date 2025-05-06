@@ -1,3 +1,5 @@
+"""Module containing the complete corpus of tokens with the numeric mapping"""
+
 from SpireModel.components import BASE_TOKENS
 from SpireModel.components import NUMBERS
 from SpireModel.components import CARD_ACTIONS
@@ -21,29 +23,29 @@ for card in VALID_CARDS:
     if "+" in card:
         continue
     for action in CARD_ACTIONS:
-        CARD_TOKENS.add(f"{action} {card}")
+        CARD_TOKENS.add(action(card))
 
 
 CURSECARD_TOKENS = set()
 for card in CURSECARDS:
     for action in CARD_ACTIONS:
-        CURSECARD_TOKENS.add(f"{action} {card}")
+        CURSECARD_TOKENS.add(action(card))
 
 
 POTION_TOKENS = set()
 for potion in POTIONS:
     for action in POTION_ACTIONS:
-        POTION_TOKENS.add(f"{action} {potion}")
+        POTION_TOKENS.add(action(potion))
 
 RELIC_TOKENS = set()
 for relic in RELIC_TOKENS:
     for action in RELIC_ACTIONS:
-        RELIC_TOKENS.add(f"{action} {relic}")
+        RELIC_TOKENS.add(action(relic))
 
 PATH_TOKENS = set()
 for path in PATHS:
     for action in PATH_ACTIONS:
-        PATH_TOKENS.add(f"{action} {path}")
+        PATH_TOKENS.add(action(path))
 
 ## Combine all the collections, sort them, then map the token to the sorted index value
 TOKEN_COLLECTION = sorted(
