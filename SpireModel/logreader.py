@@ -1,6 +1,7 @@
 from typing import Generator
 
 from SpireModel.components import acquire
+from SpireModel.components import battle
 from SpireModel.components import skip
 from SpireModel.components import CHARACTERS
 
@@ -110,3 +111,19 @@ def parse_card_choices(card_choices: list[dict]) -> dict[int, tuple[str, ...]]:
             not_picked_cards.extend(tokens[1:])
         card_choices_by_floor[floor] = (*picked, *not_picked_cards)
     return card_choices_by_floor
+
+
+def _parse_enemy_damage_taken(battle_info: dict) -> tuple[str, ...]:
+    return (battle(battle_info["enemies"]),)
+
+
+def parse_damage_taken(damage_taken: list[dict]) -> dict[int, tuple[str, ...]]:
+    damage_taken_by_floor: dict[int, tuple[str, ...]] = {}
+    for floor in damage_taken:
+        floor_number = floor["floor"]
+        if "enemies" in floor:
+            damage_taken_by_floor[floor_number] = _parse_enemy_damage_taken(floor)
+        else:
+            print(floor)
+            raise ValueError("Enemies not found in floor")
+    return damage_taken_by_floor
