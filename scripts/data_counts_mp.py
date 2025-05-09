@@ -82,12 +82,13 @@ def process_log_file(filepath: Path):
         "damage_taken_by_enemy": defaultdict(Counter),
         "potions_obtained": defaultdict(Counter),
         "floors_visited": set(),
-        "path_per_floor_counts": Counter(),  # <-- ADDED: Initialize new counter
+        "path_per_floor_counts": Counter(),
         "items_purchased": set(),
         "neow_bonus": Counter(),
         "build_version": set(),
         "purchased_purges": Counter(),
         "events": Counter(),
+        "event_choices_count": Counter(),  # This will count keys within event_choice objects
         "neow_cost": Counter(),
         "is_trial": Counter(),
         "character_chosen": Counter(),
@@ -114,13 +115,15 @@ def process_log_file(filepath: Path):
         with open(filepath, "rb") as f:
             content = f.read()
             if not content:
-                return file_data
+                return file_data  # Return empty initialised data
 
             logs = orjson.loads(content)
 
         if not isinstance(logs, list):
             if isinstance(logs, dict) and "event" in logs:
-                logs = [logs]
+                logs = [
+                    logs
+                ]  # Handle case where file contains a single log object instead of a list
             else:
                 logging.warning(
                     f"Expected list/dict of logs, got {type(logs)} in {filepath}"
@@ -147,7 +150,7 @@ def process_log_file(filepath: Path):
                     f"Error during mod check in {filepath}: {e}", exc_info=False
                 )
                 filter_errors += 1
-                mod_reason = "filter_check_error"
+                mod_reason = "filter_check_error"  # Ensure it's treated as modded
 
             if mod_reason is not None:
                 modded_logs += 1
@@ -157,9 +160,7 @@ def process_log_file(filepath: Path):
 
             processed_logs += 1
 
-            # --- Data Extraction (Keep all the try/except blocks as before) ---
-            # (Existing extraction logic for floor_reached, master_deck, etc.)
-            # ... (all previous try/except blocks for other fields remain unchanged) ...
+            # --- Data Extraction ---
             try:
                 floor = data.get("floor_reached")
                 file_data["floor_reached"][floor] += 1 if floor is not None else 0
@@ -193,7 +194,7 @@ def process_log_file(filepath: Path):
                                         damage
                                     ] += 1
                                 except TypeError:
-                                    pass
+                                    pass  # Ignore if damage is not hashable for Counter
             except Exception:
                 pass
             try:
@@ -206,15 +207,12 @@ def process_log_file(filepath: Path):
                                 try:
                                     file_data["potions_obtained"][key][floor] += 1
                                 except TypeError:
-                                    pass
+                                    pass  # Ignore if floor is not hashable
             except Exception:
                 pass
-
-            # --- MODIFIED: Process path_per_floor ---
             try:
                 path = data.get("path_per_floor")
                 if isinstance(path, list):
-                    # Keep original logic for floors_visited set
                     file_data["floors_visited"].update(
                         {
                             f
@@ -222,17 +220,11 @@ def process_log_file(filepath: Path):
                             if isinstance(f, (str, int, float, tuple, type(None)))
                         }
                     )
-                    # --- ADDED: Count string occurrences in path_per_floor ---
                     for item in path:
                         if isinstance(item, str):
                             file_data["path_per_floor_counts"][item] += 1
-                    # --- END ADDED ---
-            except Exception as e:
-                # Optional: Log if needed, but pass to avoid crashing on one field
-                # logging.warning(f"Error processing path_per_floor in {filepath} for a log: {e}")
+            except Exception:
                 pass
-            # --- END MODIFIED ---
-
             try:
                 items = data.get("items_purchased")
                 if isinstance(items, list):
@@ -258,16 +250,26 @@ def process_log_file(filepath: Path):
                 file_data["purchased_purges"][purges] += 1 if purges is not None else 0
             except Exception:
                 pass
+
+            # MODIFIED: Process event_choices for 'events' and 'event_choices_count'
             try:
-                events = data.get("event_choices")
-                if isinstance(events, list):
-                    for event in events:
-                        if isinstance(event, dict):
-                            name = event.get("event_name")
+                event_choices_list = data.get("event_choices")
+                if isinstance(event_choices_list, list):
+                    for event_detail_dict in event_choices_list:
+                        if isinstance(event_detail_dict, dict):
+                            # Original logic: count event names for the 'events' key
+                            name = event_detail_dict.get("event_name")
                             if isinstance(name, str):
                                 file_data["events"][name] += 1
+
+                            # New logic: count the occurrences of each key within this event_detail_dict
+                            for key_in_choice in event_detail_dict.keys():
+                                file_data["event_choices_count"][key_in_choice] += 1
             except Exception:
+                # Catching errors from processing event_choices, consistent with other fields
                 pass
+            # END MODIFICATION for event_choices
+
             try:
                 val = data.get("neow_cost")
                 file_data["neow_cost"][val] += 1 if val is not None else 0
@@ -305,7 +307,9 @@ def process_log_file(filepath: Path):
             except Exception:
                 pass
             try:
-                val = data.get("victory")
+                val = data.get(
+                    "victory"
+                )  # Assuming 'victory' is boolean or similar hashable
                 file_data["win_rate"][val] += 1 if val is not None else 0
             except Exception:
                 pass
@@ -321,7 +325,9 @@ def process_log_file(filepath: Path):
                 pass
             try:
                 val = data.get("special_seed")
-                file_data["special_seed"][val] += 1 if val is not None else 0
+                file_data["special_seed"][val] += (
+                    1 if val is not None else 0
+                )  # Assuming special_seed is hashable or None
             except Exception:
                 pass
             # --- End Data Extraction ---
@@ -329,18 +335,18 @@ def process_log_file(filepath: Path):
         # Update final counts for the file
         file_data["processed_logs_count"] = processed_logs
         file_data["modded_logs_skipped"] = modded_logs
-        file_data["filter_errors"] = filter_errors
+        file_data["filter_errors"] = filter_errors  # Update file-level filter errors
         return file_data
 
     except FileNotFoundError:
         logging.error(f"File not found: {filepath}")
-        return None
+        return {"_file_error": "FileNotFound"}
     except orjson.JSONDecodeError as e:
         logging.error(f"Failed JSON parse: {filepath} - {e}")
-        return None
+        return {"_file_error": "JSONDecodeError"}
     except Exception as e:
         logging.exception(f"Unexpected error processing file {filepath}: {e}")
-        return None
+        return {"_file_error": "UnexpectedError"}
 
 
 # --- Aggregation Function ---
@@ -356,12 +362,13 @@ def aggregate_results(all_results):
         "damage_taken_by_enemy": defaultdict(Counter),
         "potions_obtained": defaultdict(Counter),
         "floors_visited": set(),
-        "path_per_floor_counts": Counter(),  # <-- ADDED: Initialize aggregated counter
+        "path_per_floor_counts": Counter(),
         "items_purchased": set(),
         "neow_bonus": Counter(),
         "build_version": set(),
         "purchased_purges": Counter(),
         "events": Counter(),
+        "event_choices_count": Counter(),  # MODIFIED: New key for aggregated counts
         "neow_cost": Counter(),
         "is_trial": Counter(),
         "character_chosen": Counter(),
@@ -377,14 +384,16 @@ def aggregate_results(all_results):
         "_total_processed_logs": 0,
         "_total_modded_logs_skipped": 0,
         "_total_modded_reasons": Counter(),
-        "_total_data_errors_in_logs": 0,
-        "_total_filter_errors": 0,
+        "_total_data_errors_in_logs": 0,  # Errors from within a log's data structure
+        "_total_filter_errors": 0,  # Errors from the get_modded_reason function
         "_files_processed_successfully": 0,
-        "_files_failed_processing": 0,
+        "_files_failed_processing": 0,  # Files that couldn't be read/parsed at all
     }
 
     for file_result in all_results:
-        if file_result is None:
+        if file_result is None or file_result.get(
+            "_file_error"
+        ):  # Check for file processing errors
             final_data["_files_failed_processing"] += 1
             continue
 
@@ -404,43 +413,42 @@ def aggregate_results(all_results):
         )
 
         # --- Aggregate all data fields (Counters, Sets, defaultdicts) ---
-        final_data["floor_reached"].update(file_result.get("floor_reached", Counter()))
-        final_data["master_deck"].update(file_result.get("master_deck", Counter()))
-        final_data["relics"].update(file_result.get("relics", Counter()))
-        final_data["purchased_purges"].update(
-            file_result.get("purchased_purges", Counter())
-        )
-        final_data["events"].update(file_result.get("events", Counter()))
-        final_data["neow_bonus"].update(file_result.get("neow_bonus", Counter()))
-        final_data["neow_cost"].update(file_result.get("neow_cost", Counter()))
-        final_data["is_trial"].update(file_result.get("is_trial", Counter()))
-        final_data["character_chosen"].update(
-            file_result.get("character_chosen", Counter())
-        )
-        final_data["is_prod"].update(file_result.get("is_prod", Counter()))
-        final_data["is_daily"].update(file_result.get("is_daily", Counter()))
-        final_data["chose_seed"].update(file_result.get("chose_seed", Counter()))
-        final_data["circlet_count"].update(file_result.get("circlet_count", Counter()))
-        final_data["win_rate"].update(file_result.get("win_rate", Counter()))
-        final_data["is_beta"].update(file_result.get("is_beta", Counter()))
-        final_data["is_endless"].update(file_result.get("is_endless", Counter()))
-        final_data["special_seed"].update(file_result.get("special_seed", Counter()))
+        for key, value_type in [
+            ("floor_reached", Counter),
+            ("master_deck", Counter),
+            ("relics", Counter),
+            ("purchased_purges", Counter),
+            ("events", Counter),
+            ("event_choices_count", Counter),  # Aggregation logic for Counter is fine
+            ("neow_bonus", Counter),
+            ("neow_cost", Counter),
+            ("is_trial", Counter),
+            ("character_chosen", Counter),
+            ("is_prod", Counter),
+            ("is_daily", Counter),
+            ("chose_seed", Counter),
+            ("circlet_count", Counter),
+            ("win_rate", Counter),
+            ("is_beta", Counter),
+            ("is_endless", Counter),
+            ("special_seed", Counter),
+            ("path_per_floor_counts", Counter),
+        ]:
+            final_data[key].update(file_result.get(key, value_type()))
 
-        # --- ADDED: Aggregate the new counter ---
-        final_data["path_per_floor_counts"].update(
-            file_result.get("path_per_floor_counts", Counter())
-        )
-        # --- END ADDED ---
-
-        final_data["floors_visited"].update(file_result.get("floors_visited", set()))
-        final_data["items_purchased"].update(file_result.get("items_purchased", set()))
-        final_data["build_version"].update(file_result.get("build_version", set()))
+        for key, value_type in [
+            ("floors_visited", set),
+            ("items_purchased", set),
+            ("build_version", set),
+        ]:
+            final_data[key].update(file_result.get(key, value_type()))
 
         damage_taken = file_result.get("damage_taken_by_enemy")
         if damage_taken:
             for enemy, counts in damage_taken.items():
                 if isinstance(counts, Counter):
                     final_data["damage_taken_by_enemy"][enemy].update(counts)
+
         potions_obtained = file_result.get("potions_obtained")
         if potions_obtained:
             for potion, counts in potions_obtained.items():
@@ -449,7 +457,6 @@ def aggregate_results(all_results):
         # --- End Aggregation of data fields ---
 
     logging.info("Aggregation complete.")
-    # (Keep existing logging for metadata totals)
     logging.info(
         f"Total non-modded logs processed: {final_data['_total_processed_logs']:_}"
     )
@@ -466,7 +473,7 @@ def aggregate_results(all_results):
         )
     if final_data["_files_failed_processing"] > 0:
         logging.warning(
-            f"Total files failed processing (read/JSON errors): {final_data['_files_failed_processing']}"
+            f"Total files failed processing (read/JSON/unexpected errors): {final_data['_files_failed_processing']}"
         )
 
     if final_data["_total_modded_reasons"]:
@@ -484,7 +491,7 @@ def aggregate_results(all_results):
     return final_data
 
 
-# --- Main Execution (Unchanged) ---
+# --- Main Execution (Unchanged from your provided script) ---
 if __name__ == "__main__":
     start_time = time.time()
     logging.info(f"Starting log processing using up to {MAX_WORKERS} processes.")
@@ -514,13 +521,17 @@ if __name__ == "__main__":
         with Pool(processes=MAX_WORKERS) as pool:
             results_iterator = pool.imap_unordered(process_log_file, files_to_process)
 
-            for result in results_iterator:
+            for i, result in enumerate(results_iterator):
                 total_files_iterator_handled += 1
-                if result is not None:
+                if result is not None and not result.get("_file_error"):
                     results_from_workers.append(result)
                     files_returned_data_count += 1
                 else:
                     files_returned_none_count += 1
+                    if result and result.get("_file_error"):
+                        logging.debug(
+                            f"File processing failed with: {result.get('_file_error')}"
+                        )
 
                 if (
                     total_files_iterator_handled % 500 == 0
@@ -528,7 +539,7 @@ if __name__ == "__main__":
                 ):
                     logging.info(
                         f"Progress: {total_files_iterator_handled}/{num_files} tasks completed "
-                        f"({files_returned_data_count} succeeded, {files_returned_none_count} failed)."
+                        f"({files_returned_data_count} data payloads, {files_returned_none_count} failed/empty)."
                     )
 
     except Exception as e:
@@ -536,7 +547,7 @@ if __name__ == "__main__":
 
     logging.info(
         f"Pool processing finished. Files returned data: {files_returned_data_count}, "
-        f"Files returned None (failed): {files_returned_none_count}"
+        f"Files failed or returned no data: {files_returned_none_count}"
     )
 
     if results_from_workers:
@@ -551,7 +562,7 @@ if __name__ == "__main__":
             logging.exception(f"Failed to save pickle file: {e}")
     else:
         logging.warning(
-            "No results successfully processed. Skipping aggregation/saving."
+            "No results successfully processed or all files failed. Skipping aggregation/saving."
         )
 
     end_time = time.time()
