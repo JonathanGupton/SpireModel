@@ -184,26 +184,24 @@ def tokenize_max_health_lost(max_health_lost: int | str):
     pass
 
 
+def tokenize_knowing_skull_choices(event_choice: str) -> str:
+    """Convert the lengthy Knowing Skull choice down to one word per option"""
+    if event_choice == "":
+        return "SKIP"
+    options = sorted(list(set(event_choice.strip().split(" "))))
+    return " ".join(options)
+
+
 def parse_event_choices(event_choices: list[dict[str, int | str]]):
     event_by_floor: dict[int, list[str]] = defaultdict(list)
     for event in event_choices:
         floor = event["floor"]
-        event_by_floor[floor].append(event_name(event["event_name"]))
-        event_by_floor[floor].append(player_chose(event["player_choice"]))
+        event_name = event_name(event["event_name"])
+        event_by_floor[floor].append(event_name)
+        player_choice = event["player_choice"]
+        if player_choice == "Knowing Skull":
+            player_choice = tokenize_knowing_skull_choices(player_choice)
+        event_by_floor[floor].append(player_chose(player_choice))
+
         if event.get("damage_healed", 0) != 0:
             pass
-
-
-# Event choice "Knowing Skull" choices
-# choices = (
-#     ("SKIP",),
-#     ("CARD",),
-#     ("GOLD",),
-#     ("POTION",),
-#     (
-#         "CARD",
-#         "GOLD",
-#     ),
-#     ("CARD", "POTION"),
-#     ("CARD", "GOLD", "POTION"),
-# )
