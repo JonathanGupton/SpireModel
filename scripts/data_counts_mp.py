@@ -51,7 +51,7 @@ if log_path_str is None:
     logging.error("LOGPATH environment variable not set.")
     exit(1)
 log_path = Path(log_path_str)
-output_dir = Path(".")  # Save in current dir, adjust as needed
+output_dir = Path("../data/")  # Save in current dir, adjust as needed
 output_dir.mkdir(parents=True, exist_ok=True)
 OUTPUT_PICKLE_FILE = (
     output_dir / "metadata_dump_multiprocessing_extended.pkl"
