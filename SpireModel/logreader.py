@@ -186,6 +186,8 @@ def tokenize_max_health_lost(max_health_lost: int | str):
 
 def tokenize_knowing_skull_choices(event_choice: str) -> str:
     """Convert the lengthy Knowing Skull choice down to one word per option"""
+    if not isinstance(event_choice, str):
+        raise TypeError("Expects string")
     if event_choice == "":
         return "SKIP"
     options = sorted(list(set(event_choice.strip().split(" "))))
