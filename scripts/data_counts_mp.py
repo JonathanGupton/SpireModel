@@ -90,7 +90,8 @@ def process_log_file(filepath: Path):
         "events": Counter(),  # Counts overall event_name occurrences
         "event_player_choices": defaultdict(
             Counter
-        ),  # MODIFIED: New structure {event_name: {player_choice: count}}
+        ),  # {event_name: {player_choice: count}}
+        "event_choice_keys_counts": Counter(),  # NEW: To store counts of keys within event_choices dicts
         "neow_cost": Counter(),
         "is_trial": Counter(),
         "character_chosen": Counter(),
@@ -249,7 +250,7 @@ def process_log_file(filepath: Path):
             except Exception:
                 pass
 
-            # MODIFIED: Process event_choices for 'events' and 'event_player_choices'
+            # MODIFIED: Process event_choices
             try:
                 event_choices_list = data.get("event_choices")
                 if isinstance(event_choices_list, list):
@@ -269,7 +270,12 @@ def process_log_file(filepath: Path):
                                 file_data["event_player_choices"][event_name][
                                     player_choice
                                 ] += 1
+
+                            # NEW: Count all keys within event_detail_dict
+                            for key_in_event in event_detail_dict.keys():
+                                file_data["event_choice_keys_counts"][key_in_event] += 1
             except Exception:
+                # logging.warning(f"Error processing event_choices in {filepath}", exc_info=True) # Optional
                 pass
             # END MODIFICATION
 
@@ -366,7 +372,8 @@ def aggregate_results(all_results):
         "events": Counter(),  # Overall event occurrences
         "event_player_choices": defaultdict(
             Counter
-        ),  # MODIFIED: Aggregated {event_name: {player_choice: count}}
+        ),  # Aggregated {event_name: {player_choice: count}}
+        "event_choice_keys_counts": Counter(),  # NEW: Aggregated counts of keys from event_choices
         "neow_cost": Counter(),
         "is_trial": Counter(),
         "character_chosen": Counter(),
@@ -425,6 +432,7 @@ def aggregate_results(all_results):
             "is_endless",
             "special_seed",
             "path_per_floor_counts",
+            "event_choice_keys_counts",  # NEW: Add for aggregation
         ]:
             final_data[key].update(file_result.get(key, Counter()))
 
@@ -446,7 +454,7 @@ def aggregate_results(all_results):
                 if isinstance(counts, Counter):
                     final_data["potions_obtained"][potion].update(counts)
 
-        # MODIFIED: Aggregate defaultdict(Counter) for event_player_choices
+        # Aggregate defaultdict(Counter) for event_player_choices
         event_choices_data = file_result.get("event_player_choices")
         if event_choices_data:  # This is a defaultdict(Counter)
             for event_name, player_choice_counts in event_choices_data.items():
@@ -455,7 +463,6 @@ def aggregate_results(all_results):
                     final_data["event_player_choices"][event_name].update(
                         player_choice_counts
                     )
-        # END MODIFICATION
 
     logging.info("Aggregation complete.")
     logging.info(
@@ -486,6 +493,24 @@ def aggregate_results(all_results):
             logging.info(f"  - {reason}: {count:_}")
     else:
         logging.info("No logs were skipped due to modding flags.")
+
+    # NEW: Log the event_choice_keys_counts
+    if final_data["event_choice_keys_counts"]:
+        logging.info(
+            "Breakdown of keys found in event_choices entries and their total counts:"
+        )
+        for key, count in sorted(
+            final_data["event_choice_keys_counts"].items(),
+            key=lambda item: item[1],  # Sort by count descending
+            reverse=True,
+        ):
+            logging.info(f'  - "{key}": {count:_}')
+    else:
+        logging.info(
+            "No keys were found within event_choices entries across all processed logs."
+        )
+    # END NEW LOGGING
+
     return final_data
 
 
