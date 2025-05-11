@@ -87,8 +87,10 @@ def process_log_file(filepath: Path):
         "neow_bonus": Counter(),
         "build_version": set(),
         "purchased_purges": Counter(),
-        "events": Counter(),
-        "event_choices_count": Counter(),  # This will count keys within event_choice objects
+        "events": Counter(),  # Counts overall event_name occurrences
+        "event_player_choices": defaultdict(
+            Counter
+        ),  # MODIFIED: New structure {event_name: {player_choice: count}}
         "neow_cost": Counter(),
         "is_trial": Counter(),
         "character_chosen": Counter(),
@@ -115,15 +117,13 @@ def process_log_file(filepath: Path):
         with open(filepath, "rb") as f:
             content = f.read()
             if not content:
-                return file_data  # Return empty initialised data
+                return file_data
 
             logs = orjson.loads(content)
 
         if not isinstance(logs, list):
             if isinstance(logs, dict) and "event" in logs:
-                logs = [
-                    logs
-                ]  # Handle case where file contains a single log object instead of a list
+                logs = [logs]
             else:
                 logging.warning(
                     f"Expected list/dict of logs, got {type(logs)} in {filepath}"
@@ -141,7 +141,6 @@ def process_log_file(filepath: Path):
                 file_data["errors"] += 1
                 continue
 
-            # === MODIFIED MOD CHECK ===
             mod_reason = None
             try:
                 mod_reason = get_modded_reason(data)
@@ -150,13 +149,12 @@ def process_log_file(filepath: Path):
                     f"Error during mod check in {filepath}: {e}", exc_info=False
                 )
                 filter_errors += 1
-                mod_reason = "filter_check_error"  # Ensure it's treated as modded
+                mod_reason = "filter_check_error"
 
             if mod_reason is not None:
                 modded_logs += 1
                 file_data["modded_reasons"][mod_reason] += 1
                 continue
-            # === END MODIFIED MOD CHECK ===
 
             processed_logs += 1
 
@@ -194,7 +192,7 @@ def process_log_file(filepath: Path):
                                         damage
                                     ] += 1
                                 except TypeError:
-                                    pass  # Ignore if damage is not hashable for Counter
+                                    pass
             except Exception:
                 pass
             try:
@@ -202,12 +200,12 @@ def process_log_file(filepath: Path):
                 if isinstance(potions_obtained, list):
                     for potion in potions_obtained:
                         if isinstance(potion, dict):
-                            key, floor = potion.get("key"), potion.get("floor")
-                            if isinstance(key, str) and floor is not None:
+                            key, floor_val = potion.get("key"), potion.get("floor")
+                            if isinstance(key, str) and floor_val is not None:
                                 try:
-                                    file_data["potions_obtained"][key][floor] += 1
+                                    file_data["potions_obtained"][key][floor_val] += 1
                                 except TypeError:
-                                    pass  # Ignore if floor is not hashable
+                                    pass
             except Exception:
                 pass
             try:
@@ -251,24 +249,29 @@ def process_log_file(filepath: Path):
             except Exception:
                 pass
 
-            # MODIFIED: Process event_choices for 'events' and 'event_choices_count'
+            # MODIFIED: Process event_choices for 'events' and 'event_player_choices'
             try:
                 event_choices_list = data.get("event_choices")
                 if isinstance(event_choices_list, list):
                     for event_detail_dict in event_choices_list:
                         if isinstance(event_detail_dict, dict):
-                            # Original logic: count event names for the 'events' key
-                            name = event_detail_dict.get("event_name")
-                            if isinstance(name, str):
-                                file_data["events"][name] += 1
+                            event_name = event_detail_dict.get("event_name")
+                            player_choice = event_detail_dict.get("player_choice")
 
-                            # New logic: count the occurrences of each key within this event_detail_dict
-                            for key_in_choice in event_detail_dict.keys():
-                                file_data["event_choices_count"][key_in_choice] += 1
+                            # Populate 'events' Counter (counts occurrences of event_name)
+                            if isinstance(event_name, str):
+                                file_data["events"][event_name] += 1
+
+                            # Populate 'event_player_choices' (counts player_choice per event_name)
+                            if isinstance(event_name, str) and isinstance(
+                                player_choice, str
+                            ):
+                                file_data["event_player_choices"][event_name][
+                                    player_choice
+                                ] += 1
             except Exception:
-                # Catching errors from processing event_choices, consistent with other fields
                 pass
-            # END MODIFICATION for event_choices
+            # END MODIFICATION
 
             try:
                 val = data.get("neow_cost")
@@ -307,9 +310,7 @@ def process_log_file(filepath: Path):
             except Exception:
                 pass
             try:
-                val = data.get(
-                    "victory"
-                )  # Assuming 'victory' is boolean or similar hashable
+                val = data.get("victory")
                 file_data["win_rate"][val] += 1 if val is not None else 0
             except Exception:
                 pass
@@ -325,17 +326,14 @@ def process_log_file(filepath: Path):
                 pass
             try:
                 val = data.get("special_seed")
-                file_data["special_seed"][val] += (
-                    1 if val is not None else 0
-                )  # Assuming special_seed is hashable or None
+                file_data["special_seed"][val] += 1 if val is not None else 0
             except Exception:
                 pass
             # --- End Data Extraction ---
 
-        # Update final counts for the file
         file_data["processed_logs_count"] = processed_logs
         file_data["modded_logs_skipped"] = modded_logs
-        file_data["filter_errors"] = filter_errors  # Update file-level filter errors
+        file_data["filter_errors"] = filter_errors
         return file_data
 
     except FileNotFoundError:
@@ -353,9 +351,7 @@ def process_log_file(filepath: Path):
 def aggregate_results(all_results):
     """Combines results from all worker processes."""
     logging.info("Starting aggregation of results...")
-    # Initialize final aggregated data structures
     final_data = {
-        # --- Data Fields (keep all existing and new ones) ---
         "floor_reached": Counter(),
         "master_deck": Counter(),
         "relics": Counter(),
@@ -367,8 +363,10 @@ def aggregate_results(all_results):
         "neow_bonus": Counter(),
         "build_version": set(),
         "purchased_purges": Counter(),
-        "events": Counter(),
-        "event_choices_count": Counter(),  # MODIFIED: New key for aggregated counts
+        "events": Counter(),  # Overall event occurrences
+        "event_player_choices": defaultdict(
+            Counter
+        ),  # MODIFIED: Aggregated {event_name: {player_choice: count}}
         "neow_cost": Counter(),
         "is_trial": Counter(),
         "character_chosen": Counter(),
@@ -380,26 +378,21 @@ def aggregate_results(all_results):
         "is_beta": Counter(),
         "is_endless": Counter(),
         "special_seed": Counter(),
-        # --- Metadata ---
         "_total_processed_logs": 0,
         "_total_modded_logs_skipped": 0,
         "_total_modded_reasons": Counter(),
-        "_total_data_errors_in_logs": 0,  # Errors from within a log's data structure
-        "_total_filter_errors": 0,  # Errors from the get_modded_reason function
+        "_total_data_errors_in_logs": 0,
+        "_total_filter_errors": 0,
         "_files_processed_successfully": 0,
-        "_files_failed_processing": 0,  # Files that couldn't be read/parsed at all
+        "_files_failed_processing": 0,
     }
 
     for file_result in all_results:
-        if file_result is None or file_result.get(
-            "_file_error"
-        ):  # Check for file processing errors
+        if file_result is None or file_result.get("_file_error"):
             final_data["_files_failed_processing"] += 1
             continue
 
         final_data["_files_processed_successfully"] += 1
-
-        # Aggregate metadata counters
         final_data["_total_processed_logs"] += file_result.get(
             "processed_logs_count", 0
         )
@@ -412,49 +405,57 @@ def aggregate_results(all_results):
             file_result.get("modded_reasons", Counter())
         )
 
-        # --- Aggregate all data fields (Counters, Sets, defaultdicts) ---
-        for key, value_type in [
-            ("floor_reached", Counter),
-            ("master_deck", Counter),
-            ("relics", Counter),
-            ("purchased_purges", Counter),
-            ("events", Counter),
-            ("event_choices_count", Counter),  # Aggregation logic for Counter is fine
-            ("neow_bonus", Counter),
-            ("neow_cost", Counter),
-            ("is_trial", Counter),
-            ("character_chosen", Counter),
-            ("is_prod", Counter),
-            ("is_daily", Counter),
-            ("chose_seed", Counter),
-            ("circlet_count", Counter),
-            ("win_rate", Counter),
-            ("is_beta", Counter),
-            ("is_endless", Counter),
-            ("special_seed", Counter),
-            ("path_per_floor_counts", Counter),
+        # Aggregate Counters
+        for key in [
+            "floor_reached",
+            "master_deck",
+            "relics",
+            "purchased_purges",
+            "events",
+            "neow_bonus",
+            "neow_cost",
+            "is_trial",
+            "character_chosen",
+            "is_prod",
+            "is_daily",
+            "chose_seed",
+            "circlet_count",
+            "win_rate",
+            "is_beta",
+            "is_endless",
+            "special_seed",
+            "path_per_floor_counts",
         ]:
-            final_data[key].update(file_result.get(key, value_type()))
+            final_data[key].update(file_result.get(key, Counter()))
 
-        for key, value_type in [
-            ("floors_visited", set),
-            ("items_purchased", set),
-            ("build_version", set),
-        ]:
-            final_data[key].update(file_result.get(key, value_type()))
+        # Aggregate Sets
+        for key in ["floors_visited", "items_purchased", "build_version"]:
+            final_data[key].update(file_result.get(key, set()))
 
-        damage_taken = file_result.get("damage_taken_by_enemy")
-        if damage_taken:
-            for enemy, counts in damage_taken.items():
+        # Aggregate defaultdict(Counter) for damage_taken_by_enemy
+        damage_taken_data = file_result.get("damage_taken_by_enemy")
+        if damage_taken_data:
+            for enemy, counts in damage_taken_data.items():
                 if isinstance(counts, Counter):
                     final_data["damage_taken_by_enemy"][enemy].update(counts)
 
-        potions_obtained = file_result.get("potions_obtained")
-        if potions_obtained:
-            for potion, counts in potions_obtained.items():
+        # Aggregate defaultdict(Counter) for potions_obtained
+        potions_obtained_data = file_result.get("potions_obtained")
+        if potions_obtained_data:
+            for potion, counts in potions_obtained_data.items():
                 if isinstance(counts, Counter):
                     final_data["potions_obtained"][potion].update(counts)
-        # --- End Aggregation of data fields ---
+
+        # MODIFIED: Aggregate defaultdict(Counter) for event_player_choices
+        event_choices_data = file_result.get("event_player_choices")
+        if event_choices_data:  # This is a defaultdict(Counter)
+            for event_name, player_choice_counts in event_choices_data.items():
+                # player_choice_counts is a Counter
+                if isinstance(player_choice_counts, Counter):
+                    final_data["event_player_choices"][event_name].update(
+                        player_choice_counts
+                    )
+        # END MODIFICATION
 
     logging.info("Aggregation complete.")
     logging.info(
@@ -473,25 +474,22 @@ def aggregate_results(all_results):
         )
     if final_data["_files_failed_processing"] > 0:
         logging.warning(
-            f"Total files failed processing (read/JSON/unexpected errors): {final_data['_files_failed_processing']}"
+            f"Total files failed processing: {final_data['_files_failed_processing']}"
         )
-
     if final_data["_total_modded_reasons"]:
         logging.info("Breakdown of reasons for skipping modded logs:")
-        sorted_reasons = sorted(
+        for reason, count in sorted(
             final_data["_total_modded_reasons"].items(),
             key=lambda item: item[1],
             reverse=True,
-        )
-        for reason, count in sorted_reasons:
+        ):
             logging.info(f"  - {reason}: {count:_}")
     else:
         logging.info("No logs were skipped due to modding flags.")
-
     return final_data
 
 
-# --- Main Execution (Unchanged from your provided script) ---
+# --- Main Execution (Unchanged) ---
 if __name__ == "__main__":
     start_time = time.time()
     logging.info(f"Starting log processing using up to {MAX_WORKERS} processes.")
@@ -520,8 +518,7 @@ if __name__ == "__main__":
     try:
         with Pool(processes=MAX_WORKERS) as pool:
             results_iterator = pool.imap_unordered(process_log_file, files_to_process)
-
-            for i, result in enumerate(results_iterator):
+            for result in results_iterator:
                 total_files_iterator_handled += 1
                 if result is not None and not result.get("_file_error"):
                     results_from_workers.append(result)
@@ -541,7 +538,6 @@ if __name__ == "__main__":
                         f"Progress: {total_files_iterator_handled}/{num_files} tasks completed "
                         f"({files_returned_data_count} data payloads, {files_returned_none_count} failed/empty)."
                     )
-
     except Exception as e:
         logging.exception(f"Error during multiprocessing pool execution: {e}")
 
@@ -552,7 +548,6 @@ if __name__ == "__main__":
 
     if results_from_workers:
         final_aggregated_data = aggregate_results(results_from_workers)
-
         logging.info(f"Saving aggregated data to {OUTPUT_PICKLE_FILE}...")
         try:
             with open(OUTPUT_PICKLE_FILE, "wb") as f:
