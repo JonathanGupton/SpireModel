@@ -38,67 +38,75 @@ Path ["M", "?", "E", "$", "T", "R", "B"] -> 8
 
 Create a process that reads in specific values in a specific order from the json file
 
-0   character
-    ascension mode #
-1   add cards
+character
+ascension mode
+ascension level
+add cards
 ...
-9   add starting relic
-10 neow bonus
-11 apply neow bonus
+add starting relic
+add starting gold
+neow bonus
+apply neow bonus
 path[0]
 
 
-def get_character(data):
+
+data = {'character_chosen': "IRONCLAD"}
+cards = get_starting_cards(data)
+
+"ACQUIRE Burning Pact", "1",
 
 
 
-floor_reached -> counter
-master_deck -> counter
-relics -> counter
-damage_taken -> enemies -> dict[enemy] : list[damage]
-potions_obtained -> "key" -> dict[potion name] : list [ floor]
-path_per_floor -> set of values
-items_purchased -> set[values]
-neow_bonus -> set[values]
-build_version -> set[values]
-purchased_purges -> counter
-event_choices -> event_name -> counter
+[
+        {
+          "damage_healed": 0,
+          "gold_gain": 275,
+          "player_choice": "Desecrate",
+          "damage_taken": 0,
+          "max_hp_gain": 0,
+          "max_hp_loss": 0,
+          "event_name": "Golden Shrine",
+          "floor": 2,
+          "gold_loss": 0,
+          "cards_obtained": [
+            "Regret"
+          ]
+        },
+        {
+          "damage_healed": 0,
+          "gold_gain": 175,
+          "player_choice": "AGREE",
+          "damage_taken": 0,
+          "max_hp_gain": 0,
+          "max_hp_loss": 0,
+          "event_name": "Liars Game",
+          "floor": 12,
+          "gold_loss": 0,
+          "cards_obtained": [
+            "Doubt"
+          ]
+        },
+        {
+          "damage_healed": 0,
+          "gold_gain": 0,
+          "player_choice": "Grow",
+          "damage_taken": 0,
+          "max_hp_gain": 0,
+          "max_hp_loss": 0,
+          "event_name": "Living Wall",
+          "floor": 13,
+          "gold_loss": 0,
+          "cards_upgraded": [
+            "Storm"
+          ]
+        }
+      ]
 
-store as pkl file
 
-
-
-Threaded: 8:36 - 10:12 to finish or 5797.19 seconds
-
-
-
-
-"neow_cost",
-"is_trial",
-"character_chosen",
-"is_prod",
-"is_daily",
-"chose_seed",
-"circlet_count",
-"win_rate",
-"is_beta",
-"is_endless",
-"special_seed"
-
-
-filter out daily_mods
-filter out neow_cos3
-
-Write script to find circlet_count != 0, print the filename and circle count
-
-
-Filter out:
-neow_cost == ""
-neow_cost == "FIFTY_PERCENT_DAMAGE"
-neow_cost == "BASIC_CARDS"
-character_chosen == 'SCHOLAR'
-chose_seed == True
-circlet_count != 0
-is_beta == True
-special_seed != 0
-
+      "damage_healed": {
+        ("damage_healed, 0"): 3,
+        },
+      "gold_gain": {
+      ("gold_gain", "275")
+      }
