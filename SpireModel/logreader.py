@@ -4,20 +4,93 @@ from typing import Generator
 from SpireModel.components import acquire
 from SpireModel.components import battle
 from SpireModel.components import go_to
-from SpireModel.components import event_name
 from SpireModel.components import player_chose
 from SpireModel.components import skip
 from SpireModel.components import CHARACTERS
-
-
-class Log:
-    pass
 
 
 def tokenize_number(number: str) -> Generator[str, None, None]:
     """Takes a number in string form and splits it into individual characters"""
     for n in number:
         yield n
+
+
+def tokenize_card(card: str) -> tuple[str, ...]:
+    if "+" in card:
+        card, level = card.split("+")
+        return card, *tokenize_number(level)
+    return (card,)
+
+
+def tokenize_damage_taken(damage_taken: int | str) -> tuple[str, ...]:
+    """
+    LOSE [N] HEALTH
+    """
+
+    return "LOSE", *tokenize_number(str(damage_taken)), "HEALTH"
+
+
+def tokenize_health_healed(health_healed: int | str):
+    """
+    GAIN [N] HEALTH
+    """
+    return "GAIN", *tokenize_number(str(health_healed)), "HEALTH"
+
+
+def tokenize_max_health_gained(max_health_gained: int | str):
+    """
+    INCREASE [N] MAX HEALTH
+    """
+    return "INCREASE", *tokenize_number(str(max_health_gained)), "MAX HEALTH"
+
+
+def tokenize_max_health_lost(max_health_lost: int | str):
+    """
+    DECREASE [N] MAX HEALTH
+    """
+    return "DECREASE", *tokenize_number(str(max_health_lost)), "MAX HEALTH"
+
+
+def tokenize_gold_gain(gold_gained: int | str) -> tuple[str, ...]:
+    """
+    ACQUIRE [N] GOLD
+    """
+    return "ACQUIRE", *tokenize_number(str(gold_gained)), "GOLD"
+
+
+def tokenize_gold_lost(gold_lost: int | str) -> tuple[str, ...]:
+    """
+    LOSE [N] GOLD
+    """
+    return "LOSE", *tokenize_number(str(gold_lost)), "GOLD"
+
+
+def tokenize_event_card_acquisition(cards):
+    """
+    Need to iterate over cards and acquire with tokenize_card?
+    """
+    # TODO:  Whatever this is
+    pass
+
+
+def tokenize_remove_card(card: str) -> tuple[str, ...]:
+    """
+    REMOVE [CARD] [optional N]
+    """
+    return "REMOVE", *tokenize_card(card)
+
+
+def tokenize_upgrade_card(card: str) -> tuple[str, ...]:
+    """UPGRADE CARD [N]"""
+    return "UPGRADE", *tokenize_card(card)
+
+
+def tokenize_event_relic_acquisition(relics):
+    """
+    Need to iterate over relics and call acquire(relic)
+    """
+    # TODO:  Whatever this is
+    pass
 
 
 def get_character_token(data) -> tuple[str]:
@@ -91,13 +164,6 @@ def get_neow_cost(data):
     return ()
 
 
-def tokenize_card(card: str) -> tuple[str, ...]:
-    if "+" in card:
-        card, level = card.split("+")
-        return card, *tokenize_number(level)
-    return (card,)
-
-
 def parse_card_choices(card_choices: list[dict]) -> dict[int, tuple[str, ...]]:
     card_choices_by_floor: dict[int, tuple[str, ...]] = {}
     for choices in card_choices:
@@ -166,21 +232,20 @@ def parse_path_per_floor(
     return path_map
 
 
-def tokenize_damage_taken(damage_taken: int | str) -> tuple[str, ...]:
-    # TODO: Finish this
-    tokenize_number(str(damage_taken))
-
-
-def tokenize_health_healed(health_healed: int | str):
-    # TODO:  implement this
+def parse_cards_transformed(cards_transformed: list[str]) -> tuple[str, ...]:
+    """TRANSFORM [card] [N]"""
+    # TODO:  Whatever this is
     pass
 
 
-def tokenize_max_health_gained(max_health_gained: int | str):
+def tokenize_relic_lost(relic: str) -> str:
+    """REMOVE [relic]"""
+    # TODO:  Whatever this is
     pass
 
 
-def tokenize_max_health_lost(max_health_lost: int | str):
+def parse_relics_lost(relics: list[str]) -> tuple[str, ...]:
+    # TODO:  Whatever this is
     pass
 
 
@@ -207,3 +272,26 @@ def parse_event_choices(event_choices: list[dict[str, int | str]]):
 
         if event.get("damage_healed", 0) != 0:
             pass
+        """
+        "potions_obtained"
+
+        """
+
+    """
+    Prepped functions:
+    "event_name"
+    "floor"
+    "player_choice"
+    "damage_healed"
+    "damage_taken"
+    "max_hp_gain"
+    "max_hp_loss"
+    "gold_loss"
+    "gold_gain"
+    "cards_obtained" 
+    "cards_removed"
+    "cards_upgraded"
+    "relics_obtained"
+    "cards_transformed"
+    "relics_lost"
+    """
