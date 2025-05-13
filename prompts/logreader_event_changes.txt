@@ -1,0 +1,4 @@
+Standardize the return values as tuples instead of str.  Changes appends to extend as necessary.
+parse_events should return a dict[int, tuple[str,...]
+Add logging and type checking as needed
+Do not remove imports
