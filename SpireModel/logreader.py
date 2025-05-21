@@ -1,5 +1,6 @@
 from collections import defaultdict
 import logging
+import re
 from typing import Generator, Any, Optional, Dict, List, Tuple
 
 from SpireModel.components import acquire
@@ -42,6 +43,24 @@ def tokenize_number(number: str) -> Generator[str, None, None]:
         raise
 
 
+DEFEND_PATTERN = r"Defend_\w{1}"
+DEFEND_PLUS_PATTERN = r"Defend_\w{1}\+1"
+STRIKE_PATTERN = r"Strike_\w{1}"
+STRIKE_PLUS_PATTERN = r"Strike_\w{1}\+1"
+
+
+def standardize_strikes_and_defends(card: str) -> str:
+    if re.fullmatch(DEFEND_PATTERN, card):
+        return "Defend"
+    if re.fullmatch(DEFEND_PLUS_PATTERN, card):
+        return "Defend+1"
+    if re.fullmatch(STRIKE_PATTERN, card):
+        return "Strike"
+    if re.fullmatch(STRIKE_PLUS_PATTERN, card):
+        return "Strike+1"
+    return card
+
+
 def tokenize_card(card: str) -> Tuple[str, ...]:
     """Splits a card string like 'Bash+1' into ('Bash', '1') or ('Strike',)"""
     if not isinstance(card, str):
@@ -50,6 +69,7 @@ def tokenize_card(card: str) -> Tuple[str, ...]:
         )
         raise TypeError(f"Input 'card' must be a string, got {type(card)}")
 
+    card = standardize_strikes_and_defends(card)
     try:
         if "+" in card:
             parts = card.split("+", 1)
@@ -193,7 +213,7 @@ def tokenize_remove_card(card: str) -> Tuple[str, ...]:
     logger.debug(f"Tokenizing card removal: {card}")
     try:
         tokens = tokenize_card(card)
-        return ("REMOVE", *tokens)
+        return (" ".join(("REMOVE", *tokens)),)
     except (ValueError, TypeError) as e:  # Catch errors from tokenize_card
         logger.error(f"Error tokenizing card for removal: {card}. Error: {e}")
         raise ValueError(f"Failed to tokenize card for removal: {card}") from e
@@ -238,13 +258,9 @@ def tokenize_upgrade_card(card: str) -> Tuple[str, ...]:
         tokens = tokenize_card(card)
         # Ensure it looks like an upgraded card (has level info after name)
         if len(tokens) > 1 and all(t.isdigit() for t in tokens[1:]):
-            return ("UPGRADE", *tokens)
+            return (" ".join(("UPGRADE", *tokens)),)
         else:
-            # Handle case where base card name is passed (e.g., from event)
-            logger.warning(
-                f"Card '{card}' passed to tokenize_upgrade_card lacks explicit level info. Assuming upgrade to +1 from base."
-            )
-            return ("UPGRADE", tokens[0], "1")
+            return (" ".join(("UPGRADE", tokens[0])),)
     except (ValueError, TypeError) as e:  # Catch errors from tokenize_card
         logger.error(f"Error tokenizing card for upgrade: {card}. Error: {e}")
         raise ValueError(f"Failed to tokenize card for upgrade: {card}") from e
@@ -1362,42 +1378,68 @@ def parse_events(events: List[Dict[str, Any]]) -> Dict[int, Tuple[str, ...]]:
             # So, check for non-None and non-empty string before tokenizing.
 
             damage_healed = event_data.get("damage_healed")
-            if damage_healed is not None and (
-                isinstance(damage_healed, int)
-                or (isinstance(damage_healed, str) and damage_healed)
+            if (
+                damage_healed
+                and damage_healed is not None
+                and (
+                    isinstance(damage_healed, int)
+                    or (isinstance(damage_healed, str) and damage_healed)
+                )
             ):
                 tokens.extend(tokenize_health_healed(damage_healed))
 
-            damage_taken = event_data.get("damage_taken")
-            if damage_taken is not None and (
-                isinstance(damage_taken, int)
-                or (isinstance(damage_taken, str) and damage_taken)
+            damage_taken = event_data.get("damage_taken", 0)
+            if (
+                damage_taken
+                and damage_taken is not None
+                and (
+                    isinstance(damage_taken, int)
+                    or (isinstance(damage_taken, str) and damage_taken)
+                )
             ):
                 tokens.extend(tokenize_damage_taken(damage_taken))
 
-            max_hp_gain = event_data.get("max_hp_gain")
-            if max_hp_gain is not None and (
-                isinstance(max_hp_gain, int)
-                or (isinstance(max_hp_gain, str) and max_hp_gain)
+            max_hp_gain = event_data.get("max_hp_gain", 0)
+            if (
+                max_hp_gain
+                and max_hp_gain is not None
+                and (
+                    isinstance(max_hp_gain, int)
+                    or (isinstance(max_hp_gain, str) and max_hp_gain)
+                )
             ):
                 tokens.extend(tokenize_max_health_gained(max_hp_gain))
 
-            max_hp_loss = event_data.get("max_hp_loss")
-            if max_hp_loss is not None and (
-                isinstance(max_hp_loss, int)
-                or (isinstance(max_hp_loss, str) and max_hp_loss)
+            max_hp_loss = event_data.get("max_hp_loss", 0)
+            if (
+                max_hp_loss
+                and max_hp_loss is not None
+                and (
+                    isinstance(max_hp_loss, int)
+                    or (isinstance(max_hp_loss, str) and max_hp_loss)
+                )
             ):
                 tokens.extend(tokenize_max_health_lost(max_hp_loss))
 
-            gold_loss = event_data.get("gold_loss")
-            if gold_loss is not None and (
-                isinstance(gold_loss, int) or (isinstance(gold_loss, str) and gold_loss)
+            gold_loss = event_data.get("gold_loss", 0)
+            if (
+                gold_loss
+                and gold_loss is not None
+                and (
+                    isinstance(gold_loss, int)
+                    or (isinstance(gold_loss, str) and gold_loss)
+                )
             ):
                 tokens.extend(tokenize_gold_lost(gold_loss))
 
-            gold_gain = event_data.get("gold_gain")
-            if gold_gain is not None and (
-                isinstance(gold_gain, int) or (isinstance(gold_gain, str) and gold_gain)
+            gold_gain = event_data.get("gold_gain", 0)
+            if (
+                gold_gain
+                and gold_gain is not None
+                and (
+                    isinstance(gold_gain, int)
+                    or (isinstance(gold_gain, str) and gold_gain)
+                )
             ):
                 tokens.extend(tokenize_gold_gain(gold_gain))
 
