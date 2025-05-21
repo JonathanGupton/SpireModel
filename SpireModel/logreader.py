@@ -1,4 +1,5 @@
 from collections import defaultdict
+from collections.abc import Callable
 import logging
 import re
 from typing import Generator, Any, Optional, Dict, List, Tuple
@@ -24,7 +25,38 @@ logger = logging.getLogger(__name__)
 # --- Tokenization Functions ---
 
 
-def tokenize_number(number: str) -> Generator[str, None, None]:
+def _tokenize_numbers_individually(number: str) -> Generator[str, None, None]:
+    """Convert a str number into the individual numbers.
+    Example:
+        number: "1934"
+        yields: "1", "9", "3", "4"
+    """
+    try:
+        for n in number:
+            yield n
+    except Exception as e:
+        logger.exception(f"Unexpected error during number tokenization for '{number}'.")
+        raise
+
+
+def _tokenize_into_masked_digits(number: str) -> Generator[str, None, None]:
+    """Yields each digit of the input string followed by Xs, representing place value.
+
+    Example:
+    input: "1934"
+    yields: "1XXX", "9XX", "3X", "4"
+    """
+    length = len(number)
+    for i, digit in enumerate(number):
+        yield digit + "X" * (length - i - 1)
+
+
+def tokenize_number(
+    number: str,
+    number_tokenizer: Callable[
+        [str], Generator[str, None, None]
+    ] = _tokenize_into_masked_digits,
+) -> Generator[str, None, None]:
     """Takes a number in string form and splits it into individual characters."""
     if not isinstance(number, str):
         logger.error(
@@ -35,12 +67,7 @@ def tokenize_number(number: str) -> Generator[str, None, None]:
         not number.isdigit() and number
     ):  # Empty string is not an error, just yields nothing.
         logger.warning(f"Input '{number}' to tokenize_number is not purely digits.")
-    try:
-        for n in number:
-            yield n
-    except Exception as e:
-        logger.exception(f"Unexpected error during number tokenization for '{number}'.")
-        raise
+    yield from number_tokenizer(number)
 
 
 DEFEND_PATTERN = r"Defend_\w{1}"
