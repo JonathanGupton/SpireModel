@@ -258,8 +258,6 @@ def test_tokenize_gold_gain():
     assert out[2:7] == ("ACQUIRE", "2XX", "7X", "5", "GOLD")
 
 
-#
-#
 def test_tokenize_gold_loss():
     events = [
         {
