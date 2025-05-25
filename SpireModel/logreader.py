@@ -11,6 +11,7 @@ from SpireModel.components import go_to
 from SpireModel.components import player_chose
 from SpireModel.components import skip
 from SpireModel.components import remove
+from SpireModel.components import upgrade
 from SpireModel.components import CHARACTERS
 
 
@@ -231,7 +232,7 @@ def tokenize_transform_card(card: str) -> Tuple[str, ...]:
 
 
 def tokenize_remove_card(card: str) -> Tuple[str, ...]:
-    """REMOVE [CARD] [optional N]"""
+    """('REMOVE', '[CARD]' '[optional N]'"""
     if not isinstance(card, str):
         logger.error(
             f"Invalid type for tokenize_remove_card: expected str, got {type(card)}. Value: {card}"
@@ -240,7 +241,7 @@ def tokenize_remove_card(card: str) -> Tuple[str, ...]:
     logger.debug(f"Tokenizing card removal: {card}")
     try:
         tokens = tokenize_card(card)
-        return (" ".join(("REMOVE", *tokens)),)
+        return remove(tokens)
     except (ValueError, TypeError) as e:  # Catch errors from tokenize_card
         logger.error(f"Error tokenizing card for removal: {card}. Error: {e}")
         raise ValueError(f"Failed to tokenize card for removal: {card}") from e
@@ -274,7 +275,7 @@ def tokenize_event_card_removal(cards: List[str]) -> Tuple[str, ...]:
 
 
 def tokenize_upgrade_card(card: str) -> Tuple[str, ...]:
-    """UPGRADE CARD [N]"""
+    """('UPGRADE', '[CARD]', '[N]')"""
     if not isinstance(card, str):
         logger.error(
             f"Invalid type for tokenize_upgrade_card: expected str, got {type(card)}. Value: {card}"
@@ -284,10 +285,7 @@ def tokenize_upgrade_card(card: str) -> Tuple[str, ...]:
     try:
         tokens = tokenize_card(card)
         # Ensure it looks like an upgraded card (has level info after name)
-        if len(tokens) > 1 and all(t.isdigit() for t in tokens[1:]):
-            return (" ".join(("UPGRADE", *tokens)),)
-        else:
-            return (" ".join(("UPGRADE", tokens[0])),)
+        return upgrade(tokens)
     except (ValueError, TypeError) as e:  # Catch errors from tokenize_card
         logger.error(f"Error tokenizing card for upgrade: {card}. Error: {e}")
         raise ValueError(f"Failed to tokenize card for upgrade: {card}") from e
