@@ -214,3 +214,90 @@ def test_tokenize_transform_card():
     out = parse_events(events)
     out = out[5]
     assert out[2:4] == ("TRANSFORM", "Strike")
+
+
+def test_tokenize_damage_taken():
+    events = [
+        {
+            "player_choice": "Change",
+            "event_name": "Living Wall",
+            "floor": 5,
+            "damage_taken": 99.0,
+        },
+    ]
+    out = parse_events(events)
+    out = out[5]
+    assert out[2:6] == ("LOSE", "9X", "9", "HEALTH")
+
+
+def test_tokenize_damage_healed():
+    events = [
+        {
+            "player_choice": "Change",
+            "event_name": "Living Wall",
+            "floor": 5,
+            "damage_healed": 99.0,
+        },
+    ]
+    out = parse_events(events)
+    out = out[5]
+    assert out[2:6] == ("GAIN", "9X", "9", "HEALTH")
+
+
+def test_tokenize_gold_gain():
+    events = [
+        {
+            "player_choice": "Change",
+            "event_name": "Living Wall",
+            "floor": 5,
+            "gold_gain": 275,
+        },
+    ]
+    out = parse_events(events)
+    out = out[5]
+    assert out[2:7] == ("ACQUIRE", "2XX", "7X", "5", "GOLD")
+
+
+#
+#
+def test_tokenize_gold_loss():
+    events = [
+        {
+            "player_choice": "Change",
+            "event_name": "Living Wall",
+            "floor": 5,
+            "gold_loss": 275,
+        },
+    ]
+    out = parse_events(events)
+    out = out[5]
+    assert out[2:7] == ("LOSE", "2XX", "7X", "5", "GOLD")
+
+
+def test_tokenize_max_hp_gain():
+    events = [
+        {
+            "player_choice": "Change",
+            "event_name": "Living Wall",
+            "floor": 5,
+            "max_hp_gain": 275,
+        },
+    ]
+    out = parse_events(events)
+    out = out[5]
+    assert out[2:7] == ("INCREASE", "2XX", "7X", "5", "MAX HEALTH")
+
+
+def test_tokenize_max_hp_loss():
+    events = [
+        {
+            "player_choice": "Change",
+            "event_name": "Living Wall",
+            "floor": 5,
+            "max_hp_loss": 275,
+        },
+    ]
+    out = parse_events(events)
+    print(out)
+    out = out[5]
+    assert out[2:7] == ("DECREASE", "2XX", "7X", "5", "MAX HEALTH")

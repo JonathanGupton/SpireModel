@@ -148,37 +148,37 @@ def _tokenize_value_change(
 
 
 def tokenize_damage_taken(damage_taken: int | str) -> Tuple[str, ...]:
-    """LOSE [N] HEALTH"""
-    return _tokenize_value_change("LOSE", damage_taken, "HEALTH", "damage_taken")
+    """('LOSE' '[N]' 'HEALTH')"""
+    return ("LOSE", *tokenize_number(str(int(damage_taken))), "HEALTH")
 
 
 def tokenize_health_healed(health_healed: int | str) -> Tuple[str, ...]:
     """GAIN [N] HEALTH"""
-    return _tokenize_value_change("GAIN", health_healed, "HEALTH", "health_healed")
+    return ("GAIN", *tokenize_number(str(int(health_healed))), "HEALTH")
 
 
 def tokenize_max_health_gained(max_health_gained: int | str) -> Tuple[str, ...]:
     """INCREASE [N] MAX HEALTH"""
-    return _tokenize_value_change(
-        "INCREASE", max_health_gained, "MAX HEALTH", "max_health_gained"
+    return (
+        "INCREASE",
+        *tokenize_number(str(int(max_health_gained))),
+        "MAX HEALTH",
     )
 
 
 def tokenize_max_health_lost(max_health_lost: int | str) -> Tuple[str, ...]:
     """DECREASE [N] MAX HEALTH"""
-    return _tokenize_value_change(
-        "DECREASE", max_health_lost, "MAX HEALTH", "max_health_lost"
-    )
+    return "DECREASE", *tokenize_number(str(int(max_health_lost))), "MAX HEALTH"
 
 
 def tokenize_gold_gain(gold_gained: int | str) -> Tuple[str, ...]:
     """ACQUIRE [N] GOLD"""
-    return _tokenize_value_change("ACQUIRE", gold_gained, "GOLD", "gold_gained")
+    return "ACQUIRE", *tokenize_number(str(int(gold_gained))), "GOLD"
 
 
 def tokenize_gold_lost(gold_lost: int | str) -> Tuple[str, ...]:
     """LOSE [N] GOLD"""
-    return _tokenize_value_change("LOSE", gold_lost, "GOLD", "gold_lost")
+    return "LOSE", *tokenize_number(str(int(gold_lost))), "GOLD"
 
 
 def tokenize_event_card_acquisition(cards: List[str]) -> Tuple[str, ...]:
@@ -1408,7 +1408,8 @@ def parse_events(events: List[Dict[str, Any]]) -> Dict[int, Tuple[str, ...]]:
                 damage_healed
                 and damage_healed is not None
                 and (
-                    isinstance(damage_healed, int)
+                    isinstance(damage_healed, float)
+                    or isinstance(damage_healed, int)
                     or (isinstance(damage_healed, str) and damage_healed)
                 )
             ):
@@ -1419,7 +1420,8 @@ def parse_events(events: List[Dict[str, Any]]) -> Dict[int, Tuple[str, ...]]:
                 damage_taken
                 and damage_taken is not None
                 and (
-                    isinstance(damage_taken, int)
+                    isinstance(damage_taken, float)
+                    or isinstance(damage_taken, int)
                     or (isinstance(damage_taken, str) and damage_taken)
                 )
             ):
@@ -1431,6 +1433,7 @@ def parse_events(events: List[Dict[str, Any]]) -> Dict[int, Tuple[str, ...]]:
                 and max_hp_gain is not None
                 and (
                     isinstance(max_hp_gain, int)
+                    or isinstance(max_hp_gain, float)
                     or (isinstance(max_hp_gain, str) and max_hp_gain)
                 )
             ):
@@ -1442,6 +1445,7 @@ def parse_events(events: List[Dict[str, Any]]) -> Dict[int, Tuple[str, ...]]:
                 and max_hp_loss is not None
                 and (
                     isinstance(max_hp_loss, int)
+                    or isinstance(max_hp_loss, float)
                     or (isinstance(max_hp_loss, str) and max_hp_loss)
                 )
             ):
