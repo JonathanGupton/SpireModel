@@ -199,3 +199,18 @@ def test_tokenize_card():
 
     card = tokenize_card("Searing Blow+99")
     assert card == ("Searing Blow", "9X", "9")
+
+
+def test_tokenize_transform_card():
+    events = [
+        {
+            "cards_transformed": ["Strike_P"],
+            "player_choice": "Change",
+            "event_name": "Living Wall",
+            "floor": 5,
+            "cards_obtained": ["Wallop"],
+        },
+    ]
+    out = parse_events(events)
+    out = out[5]
+    assert out[2:4] == ("TRANSFORM", "Strike")
