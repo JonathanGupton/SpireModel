@@ -11,6 +11,7 @@ from SpireModel.components import go_to
 from SpireModel.components import player_chose
 from SpireModel.components import skip
 from SpireModel.components import remove
+from SpireModel.components import transform
 from SpireModel.components import upgrade
 from SpireModel.components import CHARACTERS
 
@@ -196,7 +197,7 @@ def tokenize_event_card_acquisition(cards: List[str]) -> Tuple[str, ...]:
         try:
             card_tokens = tokenize_card(card_str)
             # Assuming acquire takes the base name and level tokens follow
-            all_tokens.extend((acquire(card_tokens[0]), *card_tokens[1:]))
+            all_tokens.extend((acquire(card_tokens)))
             logger.debug(
                 f"Event acquired card: {card_str} -> {(acquire(card_tokens[0]), *card_tokens[1:])}"
             )
@@ -214,7 +215,7 @@ def tokenize_event_card_acquisition(cards: List[str]) -> Tuple[str, ...]:
 
 
 def tokenize_transform_card(card: str) -> Tuple[str, ...]:
-    """TRANSFORM [CARD] [optional N]"""
+    """('TRANSFORM', '[CARD]', '[optional N]')"""
     if not isinstance(card, str):
         logger.error(
             f"Invalid type for tokenize_transform_card: expected str, got {type(card)}. Value: {card}"
@@ -222,7 +223,7 @@ def tokenize_transform_card(card: str) -> Tuple[str, ...]:
         raise TypeError(f"Input 'card' must be a string, got {type(card)}")
     try:
         tokens = tokenize_card(card)
-        return ("TRANSFORM", *tokens)
+        return transform(tokens)
     except (ValueError, TypeError) as e:  # Catch errors from tokenize_card
         logger.error(f"Failed to tokenize card '{card}' for transform: {e}")
         raise
