@@ -2,6 +2,7 @@ from pytest import fixture
 
 from SpireModel.logreader import parse_events
 from SpireModel.logreader import _tokenize_into_masked_digits
+from SpireModel.logreader import tokenize_card
 
 
 @fixture()
@@ -80,27 +81,22 @@ def events_list():
     ]
 
 
-def test_each_card_remove_is_single_string():
+def test_each_card_remove():
     events = [
         {
-            "cards_removed": ["Strike_R"],
-            "damage_healed": 0,
-            "gold_gain": 0,
+            "cards_removed": ["Strike_R", "Strike_R+1"],
             "player_choice": "Card Removal",
-            "damage_taken": 0,
-            "max_hp_gain": 0,
-            "max_hp_loss": 0,
             "event_name": "The Cleric",
             "floor": 5,
-            "gold_loss": 50,
         },
     ]
     parsed = parse_events(events)
     out = parsed[5]
-    assert "REMOVE Strike" in out
+    assert out[2:4] == ("REMOVE", "Strike")
+    assert out[4:7] == ("REMOVE", "Strike", "1")
 
 
-def test_each_card_upgrade_is_single_string():
+def test_each_card_upgrade():
     events = [
         {
             "damage_healed": 0.0,
@@ -114,19 +110,16 @@ def test_each_card_upgrade_is_single_string():
             "damage_taken": 0.0,
             "cards_upgraded": [
                 "Strike_G",
-                "Strike_G",
-                "Strike_G",
-                "Defend_G",
-                "Defend_G",
-                "Defend_G",
-                "Defend_G",
-                "Defend_G",
+                "Strike_G+1",
+                "Searing Blow+99",
             ],
         },
     ]
     parsed = parse_events(events)
     out = parsed[20]
-    assert "UPGRADE Strike" in out
+    assert ("UPGRADE", "Strike") == out[2:4]
+    assert ("UPGRADE", "Strike", "1") == out[4:7]
+    assert ("UPGRADE", "Searing Blow", "9X", "9") == out[7:11]
 
 
 def test_parse_event():
@@ -195,3 +188,14 @@ def test_tokenize_into_masked_digits():
     thousands_num = "1934"
     masked = tuple(_tokenize_into_masked_digits(thousands_num))
     assert masked == ("1XXX", "9XX", "3X", "4")
+
+
+def test_tokenize_card():
+    card = tokenize_card("Strike_G")
+    assert card == ("Strike",)
+
+    card = tokenize_card("Strike_G+1")
+    assert card == ("Strike", "1")
+
+    card = tokenize_card("Searing Blow+99")
+    assert card == ("Searing Blow", "9X", "9")
