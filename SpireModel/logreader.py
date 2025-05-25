@@ -1265,7 +1265,7 @@ def tokenize_relic_gained(relic: str) -> Tuple[str, ...]:  # Changed return type
         raise TypeError(f"Relic name must be a string, got {type(relic)}")
     if not relic:
         raise ValueError("Relic name cannot be empty")
-    return (acquire(relic),)
+    return acquire(relic)
 
 
 def tokenize_event_relics_obtained(relics_gained: List[str]) -> Tuple[str, ...]:
@@ -1278,7 +1278,7 @@ def tokenize_event_relics_obtained(relics_gained: List[str]) -> Tuple[str, ...]:
         # tokenize_relic_gained now validates str and non-empty
         try:
             all_tokens.extend(
-                tokenize_relic_gained(relic_str)
+                ("ACQUIRE", relic_str)
             )  # Use extend as it returns a tuple
         except (ValueError, TypeError) as e:
             logger.error(
@@ -1305,7 +1305,7 @@ def tokenize_event_relics_lost(relics_lost_list: List[str]) -> Tuple[str, ...]:
         # tokenize_relic_lost validates str and non-empty
         try:
             all_tokens.extend(
-                tokenize_relic_lost(relic_str)
+                ("REMOVE", relic_str)
             )  # tokenize_relic_lost returns tuple
         except (ValueError, TypeError, RuntimeError) as e:
             logger.error(f"Failed to tokenize relic '{relic_str}' for event lost: {e}")
@@ -1335,9 +1335,7 @@ def tokenize_event_potions_obtained(potions: List[str]) -> Tuple[str, ...]:
     for i, potion_str in enumerate(potions):
         # tokenize_potions_obtained_single validates str and non-empty
         try:
-            all_tokens.extend(
-                tokenize_potions_obtained_single(potion_str)
-            )  # Use extend
+            all_tokens.extend(("ACQUIRE", potion_str))  # Use extend
         except (ValueError, TypeError) as e:
             logger.error(
                 f"Failed to tokenize potion '{potion_str}' for event obtained: {e}"

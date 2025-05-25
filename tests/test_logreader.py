@@ -301,3 +301,47 @@ def test_tokenize_max_hp_loss():
     print(out)
     out = out[5]
     assert out[2:7] == ("DECREASE", "2XX", "7X", "5", "MAX HEALTH")
+
+
+def test_relics_obtained():
+    events = [
+        {
+            "player_choice": "Change",
+            "event_name": "Living Wall",
+            "floor": 5,
+            "relics_obtained": ["Relic obtained 1", "Relic obtained 2"],
+        }
+    ]
+    out = parse_events(events)
+    out = out[5]
+    assert out[2:4] == ("ACQUIRE", "Relic obtained 1")
+
+
+def test_relics_lost():
+    events = [
+        {
+            "player_choice": "Change",
+            "event_name": "Living Wall",
+            "floor": 5,
+            "relics_lost": ["Relic lost 1", "Relic lost 2"],
+        }
+    ]
+    out = parse_events(events)
+    out = out[5]
+    print(out)
+    assert out[2:4] == ("REMOVE", "Relic lost 1")
+
+
+def test_acquire_potion():
+    events = [
+        {
+            "player_choice": "Change",
+            "event_name": "Living Wall",
+            "floor": 5,
+            "potions_obtained": ["Potion obtained 1", "Potion obtained 2"],
+        }
+    ]
+    out = parse_events(events)
+    out = out[5]
+    print(out)
+    assert out[2:4] == ("ACQUIRE", "Potion obtained 1")
