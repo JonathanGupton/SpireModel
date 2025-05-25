@@ -1,22 +1,29 @@
 from functools import partial
 
 
+def add_word_tuple(second: tuple[str, ...], first: tuple[str]) -> tuple[str, ...]:
+    return first, *second
+
+
 def add_word(second: str, first: str) -> str:
     return f"{first} {second}"
 
 
-acquire = partial(add_word, first="ACQUIRE")
 battle = partial(add_word, first="BATTLE")
-decrease = partial(add_word, first="DECREASE")
 event_name = partial(add_word, first="EVENT")
 go_to = partial(add_word, first="GO TO")
-increase = partial(add_word, first="INCREASE")
 player_chose = partial(add_word, first="PLAYER CHOSE")
-remove = partial(add_word, first="REMOVE")
 skip = partial(add_word, first="SKIP")
-spend = partial(add_word, first="SPEND")
-upgrade = partial(add_word, first="UPGRADE")
-use = partial(add_word, first="USE")
+
+acquire = partial(add_word_tuple, first="ACQUIRE")
+decrease = partial(add_word_tuple, first="DECREASE")
+increase = partial(add_word_tuple, first="INCREASE")
+remove = partial(add_word_tuple, first="REMOVE")
+spend = partial(add_word_tuple, first="SPEND")
+upgrade = partial(add_word_tuple, first="UPGRADE")
+transform = partial(add_word_tuple, first="TRANSFORM")
+use = partial(add_word_tuple, first="USE")
+
 
 NUMBERS = {str(i) for i in range(10)}
 
