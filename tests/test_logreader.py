@@ -1,5 +1,6 @@
 from pytest import fixture
 
+from SpireModel.logreader import parse_campfire_choices
 from SpireModel.logreader import parse_events
 from SpireModel.logreader import _tokenize_into_masked_digits
 from SpireModel.logreader import tokenize_card
@@ -343,3 +344,32 @@ def test_acquire_potion():
     out = out[5]
     print(out)
     assert out[2:4] == ("ACQUIRE", "Potion obtained 1")
+
+
+def test_parse_campfire_choices():
+    campfire_choices = [
+        {"data": "Fire Breathing+1", "floor": 8, "key": "SMITH"},
+        {"data": "Armaments", "floor": 10, "key": "SMITH"},
+        {"data": "Seeing Red", "floor": 13, "key": "SMITH"},
+        {"data": "Fire Breathing", "floor": 15, "key": "SMITH"},
+        {"floor": 23, "key": "REST"},
+        {"floor": 1, "key": "LIFT"},
+        {"floor": 2, "key": "DIG"},
+        {"floor": 3, "key": "PURGE", "data": "Strike_B+1"},
+        {"floor": 4, "key": "RECALL"},
+    ]
+    parsed_choices = parse_campfire_choices(campfire_choices)
+    assert len(parsed_choices) == len(campfire_choices)
+    assert parsed_choices[8] == ("SMITH", "Upgrade", "Fire Breathing", "1")
+    assert parsed_choices[10] == ("SMITH", "Upgrade", "Armaments")
+    assert parsed_choices[13] == ("SMITH", "Upgrade", "Seeing Red")
+    assert parsed_choices[15] == ("SMITH", "Upgrade", "Fire Breathing")
+    assert parsed_choices[23] == ("REST",)
+    assert parsed_choices[1] == ("LIFT",)
+    assert parsed_choices[2] == ("DIG",)
+    assert parsed_choices[3] == (
+        "REMOVE",
+        "Strike",
+        "1",
+    )
+    assert parsed_choices[4] == ("RECALL",)

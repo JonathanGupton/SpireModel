@@ -153,12 +153,12 @@ def tokenize_damage_taken(damage_taken: int | str) -> Tuple[str, ...]:
 
 
 def tokenize_health_healed(health_healed: int | str) -> Tuple[str, ...]:
-    """GAIN [N] HEALTH"""
+    """("GAIN", [N], "HEALTH")"""
     return ("GAIN", *tokenize_number(str(int(health_healed))), "HEALTH")
 
 
 def tokenize_max_health_gained(max_health_gained: int | str) -> Tuple[str, ...]:
-    """INCREASE [N] MAX HEALTH"""
+    """("INCREASE", [N], "MAX HEALTH")"""
     return (
         "INCREASE",
         *tokenize_number(str(int(max_health_gained))),
@@ -1220,12 +1220,6 @@ def tokenize_event_card_upgrade(cards_upgraded: List[str]) -> Tuple[str, ...]:
 
 
 def tokenize_event_card_transformed(cards_transformed: List[str]) -> Tuple[str, ...]:
-    """
-    Note: This function processes a list of cards, each of which is transformed individually.
-    It's different from parse_cards_transformed which expects old/new pairs.
-    This might imply a context like "Astrolabe" where chosen cards are transformed.
-    The output token format per card will be ('TRANSFORM', card_name, [level]).
-    """
     if not isinstance(cards_transformed, list):
         raise TypeError(
             f"Input 'cards_transformed' must be a list, got {type(cards_transformed)}"
@@ -1240,12 +1234,6 @@ def tokenize_event_card_transformed(cards_transformed: List[str]) -> Tuple[str, 
             )
             continue
         try:
-            # tokenize_transform_card expects the card that IS being transformed.
-            # The "TO <new_card>" part is usually unknown in this context or handled differently.
-            # For "Curse of the Bell", it's "Receive 3 Curses" (acquisition).
-            # For "Astrolabe", it's "Transform 3 cards" (this function).
-            # So, the token should represent transforming THIS card.
-            # The original tokenize_transform_card(card) returns ('TRANSFORM', card_name, [level])
             all_tokens.extend(tokenize_transform_card(card_str))
         except (ValueError, TypeError) as e:
             logger.error(
@@ -1275,7 +1263,6 @@ def tokenize_event_relics_obtained(relics_gained: List[str]) -> Tuple[str, ...]:
         )
     all_tokens: List[str] = []
     for i, relic_str in enumerate(relics_gained):
-        # tokenize_relic_gained now validates str and non-empty
         try:
             all_tokens.extend(
                 ("ACQUIRE", relic_str)
@@ -1294,8 +1281,6 @@ def tokenize_event_relics_obtained(relics_gained: List[str]) -> Tuple[str, ...]:
 
 
 def tokenize_event_relics_lost(relics_lost_list: List[str]) -> Tuple[str, ...]:
-    # Renamed param to avoid conflict with imported 'remove' which was aliased as 'relics_lost' if not careful.
-    # The imported name is `remove`, so no conflict. Original param name `relics_lost` is fine.
     if not isinstance(relics_lost_list, list):
         raise TypeError(
             f"Input 'relics_lost' must be a list, got {type(relics_lost_list)}"
@@ -1559,3 +1544,31 @@ def parse_events(events: List[Dict[str, Any]]) -> Dict[int, Tuple[str, ...]]:
         f"Successfully processed {len(events)} entries, resulting in {len(event_output)} floors with event tokens."
     )
     return event_output
+
+
+def parse_campfire_choices(
+    campfire_choices: list[dict[str, Any]],
+) -> dict[int, tuple[str, ...]]:
+    parsed_choices = {}
+    for choice in campfire_choices:
+        floor = choice["floor"]
+        match choice["key"]:
+            case "REST":
+                parsed_choices[floor] = ("REST",)
+            case "SMITH":
+                parsed_choices[floor] = (
+                    "SMITH",
+                    "Upgrade",
+                    *tokenize_card(choice["data"]),
+                )
+            case "LIFT":
+                parsed_choices[floor] = ("LIFT",)
+            case "DIG":
+                parsed_choices[floor] = ("DIG",)
+            case "PURGE":
+                parsed_choices[floor] = ("REMOVE", *tokenize_card(choice["data"]))
+            case "RECALL":
+                parsed_choices[floor] = ("RECALL",)
+            case _:
+                raise ValueError(f"Unknown campfire choice key: {choice["key"]}")
+    return parsed_choices
