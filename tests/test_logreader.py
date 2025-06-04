@@ -3,6 +3,9 @@ from pytest import fixture
 from SpireModel.logreader import parse_campfire_choices
 from SpireModel.logreader import parse_events
 from SpireModel.logreader import _tokenize_into_masked_digits
+from SpireModel.logreader import parse_floor_purchases
+from SpireModel.logreader import parse_items_purged
+from SpireModel.logreader import parse_potion_usage
 from SpireModel.logreader import tokenize_card
 
 
@@ -373,3 +376,105 @@ def test_parse_campfire_choices():
         "1",
     )
     assert parsed_choices[4] == ("RECALL",)
+
+
+def test_parse_floor_purchases():
+    items_purchased = [
+        "Apotheosis",
+        "Loop+1",
+        "Happy Flower",
+        "Sweeping Beam+1",
+        "Secret Technique",
+    ]
+    item_purchase_floors = [7, 7, 38, 38, 38]
+    parsed_purchases = parse_floor_purchases(items_purchased, item_purchase_floors)
+    assert len(parsed_purchases) == len(set(item_purchase_floors))
+    assert parsed_purchases[7] == ["ACQUIRE", "Apotheosis", "ACQUIRE", "Loop", "1"]
+    assert parsed_purchases[38] == [
+        "ACQUIRE",
+        "Happy Flower",
+        "ACQUIRE",
+        "Sweeping Beam",
+        "1",
+        "ACQUIRE",
+        "Secret Technique",
+    ]
+
+
+def test_parse_items_purged():
+    items_purged = ["Strike_G", "Regret", "Strike_G+1"]
+    items_purged_floors = [2, 7, 20]
+    parsed_purged = parse_items_purged(items_purged, items_purged_floors)
+    assert len(parsed_purged) == len(set(items_purged_floors))
+    assert parsed_purged[2] == ["REMOVE", "Strike"]
+    assert parsed_purged[7] == ["REMOVE", "Regret"]
+    assert parsed_purged[20] == ["REMOVE", "Strike", "1"]
+
+
+def test_parse_potion_usage():
+    potions_obtained = [
+        {"floor": 6, "key": "Strength Potion"},
+        {"floor": 7, "key": "FairyPotion"},
+        {"floor": 21, "key": "Explosive Potion"},
+        {"floor": 28, "key": "BlessingOfTheForge"},
+        {"floor": 29, "key": "BloodPotion"},
+        {"floor": 30, "key": "Energy Potion"},
+    ]
+    potion_usage = [7, 28, 30, 31, 31]
+    potion_activity = parse_potion_usage(potions_obtained, potion_usage)
+    assert potion_activity
+
+
+def test_parse_potion_usage_single_potion_acquired_then_used():
+    potions_obtained = [{"floor": 6, "key": "Strength Potion"}]
+    potion_usage = [7]
+    potion_activity = parse_potion_usage(potions_obtained, potion_usage)
+    assert potion_activity == {7: ("POTION USED", "Strength Potion")}
+
+
+def test_parse_potion_usage_two_potions_acquired_then_used():
+    potions_obtained = [
+        {"floor": 6, "key": "Strength Potion"},
+        {"floor": 7, "key": "Dummy Potion"},
+    ]
+    potion_usage = [8, 8]
+    potion_activity = parse_potion_usage(potions_obtained, potion_usage)
+    assert potion_activity == {
+        8: ("POTION USED", "Strength Potion", "POTION USED", "Dummy Potion")
+    }
+
+
+def test_parse_potion_usage_three_potions_acquired_two_used():
+    potions_obtained = [
+        {"floor": 6, "key": "Strength Potion"},
+        {"floor": 7, "key": "Dummy Potion"},
+        {"floor": 8, "key": "Dummy Potion"},
+    ]
+    potion_usage = [9, 9]
+    potion_activity = parse_potion_usage(potions_obtained, potion_usage)
+    assert potion_activity == {
+        9: (
+            "POTION POTENTIALLY USED",
+            "Strength Potion",
+            "POTION POTENTIALLY USED",
+            "Dummy Potion",
+        )
+    }
+
+
+def test_parse_potion_usage_three_potions_acquired_two_used():
+    potions_obtained = [
+        {"floor": 6, "key": "Strength Potion"},
+        {"floor": 7, "key": "Dummy Potion"},
+        {"floor": 8, "key": "Dummy Potion"},
+    ]
+    potion_usage = [9, 9]
+    potion_activity = parse_potion_usage(potions_obtained, potion_usage)
+    assert potion_activity == {
+        9: (
+            "POTION POTENTIALLY USED",
+            "Strength Potion",
+            "POTION POTENTIALLY USED",
+            "Dummy Potion",
+        )
+    }

@@ -1,5 +1,7 @@
 from collections import defaultdict
+from collections import Counter
 from collections.abc import Callable
+from itertools import chain
 import logging
 import re
 from typing import Generator, Any, Optional, Dict, List, Tuple
@@ -1572,3 +1574,48 @@ def parse_campfire_choices(
             case _:
                 raise ValueError(f"Unknown campfire choice key: {choice["key"]}")
     return parsed_choices
+
+
+def parse_floor_purchases(
+    items_purchased: list[str], item_purchase_floors: list[int]
+) -> dict[int, list[str]]:
+    purchases = defaultdict(list)
+    for item, floor in zip(items_purchased, item_purchase_floors):
+        purchases[floor].extend(("ACQUIRE", *tokenize_card(item)))
+    return purchases
+
+
+def parse_items_purged(
+    items_purged: list[str], items_purged_floors: list[int]
+) -> dict[int, list[str]]:
+    purged = defaultdict(list)
+    for item, floor in zip(items_purged, items_purged_floors):
+        purged[floor].extend(("REMOVE", *tokenize_card(item)))
+    return purged
+
+
+def parse_potion_usage(
+    potions_obtained: list[dict[str, int | str]], potion_usage: list[int]
+) -> dict[int, tuple[str, ...]]:
+    potion_acquisition = {p_o["floor"]: p_o["key"] for p_o in potions_obtained}
+    unique_floors = set(chain(potion_acquisition.keys(), potion_usage))
+    all_floors = sorted(list(unique_floors))
+    potion_usage = Counter(potion_usage)
+    potion_activity: dict[int, tuple[str, ...]] = {}
+    potion_inventory = Counter()
+    for floor in all_floors:
+        if floor in potion_usage:
+            if potion_inventory.total() == potion_usage[floor]:
+                actions = []
+                for potion in potion_inventory.keys():
+                    actions.extend(("POTION USED", potion))
+                potion_inventory.clear()
+                potion_activity[floor] = tuple(actions)
+            else:
+                actions = []
+                for potion in potion_inventory.keys():
+                    actions.extend(("POTION POTENTIALLY USED", potion))
+                potion_activity[floor] = tuple(actions)
+        if floor in potion_acquisition:
+            potion_inventory[potion_acquisition[floor]] += 1
+    return potion_activity
