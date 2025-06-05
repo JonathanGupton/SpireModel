@@ -298,7 +298,6 @@ def tokenize_upgrade_card(card: str) -> Tuple[str, ...]:
 
 
 def tokenize_event_relic_acquisition(relics: List[str]) -> Tuple[str, ...]:
-    """Generates ACQUIRE tokens for a list of relics from an event."""
     if not isinstance(relics, list):
         logger.error(f"Expected list for event relic acquisition, got {type(relics)}")
         raise TypeError("Input 'relics' must be a list")
@@ -324,7 +323,6 @@ def tokenize_event_relic_acquisition(relics: List[str]) -> Tuple[str, ...]:
 
 
 def get_character_token(data: Dict[str, Any]) -> Tuple[str, ...]:
-    """Extracts the character token."""
     if not isinstance(data, dict):
         raise TypeError(f"Input 'data' must be a dict, got {type(data)}")
     try:
@@ -351,7 +349,6 @@ def get_character_token(data: Dict[str, Any]) -> Tuple[str, ...]:
 
 
 def get_ascension_tokens(data: Dict[str, Any]) -> Tuple[str, ...]:
-    """Gets ascension tokens if applicable."""
     if not isinstance(data, dict):
         raise TypeError(f"Input 'data' must be a dict, got {type(data)}")
     try:
@@ -398,7 +395,6 @@ def get_ascension_tokens(data: Dict[str, Any]) -> Tuple[str, ...]:
 
 
 def get_starting_cards(data: Dict[str, Any]) -> Tuple[str, ...]:
-    """Determines starting cards based on character."""
     if not isinstance(data, dict):
         raise TypeError(f"Input 'data' must be a dict, got {type(data)}")
     try:
@@ -477,7 +473,8 @@ def get_starting_cards(data: Dict[str, Any]) -> Tuple[str, ...]:
 
 
 def get_starting_relics(data: Dict[str, Any]) -> Tuple[str, ...]:
-    """Determines starting relic based on character."""
+
+
     if not isinstance(data, dict):
         raise TypeError(f"Input 'data' must be a dict, got {type(data)}")
     try:
@@ -532,7 +529,6 @@ def get_starting_relics(data: Dict[str, Any]) -> Tuple[str, ...]:
 
 
 def get_starting_gold() -> Tuple[str, ...]:
-    """Returns fixed starting gold tokens (99 Gold)."""
     logger.info("Generating starting gold tokens (99).")
     try:
         # Replicates tokenize_gold_gain("99")
@@ -544,7 +540,7 @@ def get_starting_gold() -> Tuple[str, ...]:
 
 
 def get_neow_bonus(data: Dict[str, Any]) -> Tuple[str, ...]:
-    """Gets Neow bonus token."""
+
     if not isinstance(data, dict):
         raise TypeError(f"Input 'data' must be a dict, got {type(data)}")
     try:
@@ -576,7 +572,8 @@ def get_neow_bonus(data: Dict[str, Any]) -> Tuple[str, ...]:
 
 
 def get_neow_cost(data: Dict[str, Any]) -> Tuple[str, ...]:
-    """Gets Neow cost token if present."""
+
+
     if not isinstance(data, dict):
         raise TypeError(f"Input 'data' must be a dict, got {type(data)}")
     try:
@@ -613,7 +610,9 @@ def get_neow_cost(data: Dict[str, Any]) -> Tuple[str, ...]:
 def parse_card_choices(
     card_choices: List[Dict[str, Any]],
 ) -> Dict[int, Tuple[str, ...]]:
-    """Parses card choice events, mapping floor to choice tokens."""
+
+
+
     if not isinstance(card_choices, list):
         logger.error(
             f"Invalid type for parse_card_choices: expected list, got {type(card_choices)}."
@@ -725,7 +724,6 @@ def parse_card_choices(
 
 
 def _parse_enemy_damage_taken(battle_info: Dict[str, Any]) -> Tuple[str, ...]:
-    """Helper to create battle token from damage event."""
     if not isinstance(battle_info, dict):
         raise TypeError(f"Input 'battle_info' must be a dict, got {type(battle_info)}")
     try:
@@ -749,7 +747,38 @@ def _parse_enemy_damage_taken(battle_info: Dict[str, Any]) -> Tuple[str, ...]:
 def parse_damage_taken(
     damage_taken_list: List[Dict[str, Any]],
 ) -> Dict[int, Tuple[str, ...]]:
-    """Parses damage taken events, mapping floor to battle tokens or damage tokens."""
+    """
+    Parse a list of damage taken events from a run log into a dictionary
+    mapping floor numbers to tuples of tokens.
+
+    Each damage taken event is a dict containing at least the key "floor"
+    with an integer or float value representing the floor number. If the
+    event has a "battle" key, it is considered a battle damage event and
+    the tokens are generated based on the battle information.
+
+    If the event does not have a "battle" key, it is considered a generic
+    damage taken event and the tokens are generated based on the "damage"
+    key, which should have an integer or str value representing the amount
+    of damage taken.
+
+    If an event lacks a "floor" key or has an invalid value, it is skipped.
+    If an event lacks a "damage" key or has an invalid value, it is also
+    skipped.
+
+    The function returns a dictionary mapping floor numbers to tuples of
+    tokens, where each tuple contains the tokens generated for the
+    corresponding damage taken event.
+
+    Parameters
+    ----------
+    damage_taken_list : List[Dict[str, Any]]
+        The list of damage taken events to parse.
+
+    Returns
+    -------
+    Dict[int, Tuple[str, ...]]
+        A dictionary mapping floor numbers to tuples of tokens.
+    """
     if not isinstance(damage_taken_list, list):
         logger.error(
             f"Invalid type for parse_damage_taken: expected list, got {type(damage_taken_list)}."
@@ -836,7 +865,21 @@ def parse_damage_taken(
 
 
 def parse_potions_obtained(potions: List[Dict[str, Any]]) -> Dict[int, Tuple[str, ...]]:
-    """Parses potion obtained events, mapping floor to acquire tokens."""
+
+    """
+    Parse potion obtained events, mapping floor to "ACQUIRE" and potion name tokens.
+
+    Parameters
+    ----------
+    potions : list[dict[str, Any]]
+        List of dictionaries, where each dictionary represents a potion obtained event.
+        Each dictionary should contain keys "floor" and "key" with values representing the floor the potion was obtained on and the potion name, respectively.
+
+    Returns
+    -------
+    dict[int, tuple[str, ...]]
+        Dictionary mapping floor numbers to tuples of "ACQUIRE" and potion name tokens.
+    """
     if not isinstance(potions, list):
         logger.error(
             f"Invalid type for parse_potions_obtained: expected list, got {type(potions)}."
@@ -902,7 +945,22 @@ def parse_potions_obtained(potions: List[Dict[str, Any]]) -> Dict[int, Tuple[str
 def parse_items_purchased(
     items_purchased: List[str], item_purchase_floors: List[int]
 ) -> Dict[int, Tuple[str, ...]]:
-    """Parses purchased items, grouping acquire tokens by floor. Returns dict[floor, tuple_of_item_acquire_tokens]."""
+
+    """
+    Parse purchased items, given lists of purchased items and floors on which they were purchased.
+
+    Parameters
+    ----------
+    items_purchased : list[str]
+        List of item names that were purchased from the merchant in the run file.
+    item_purchase_floors : list[int]
+        List of floors on which items were purchased, in same order as the items in `items_purchased`.
+
+    Returns
+    -------
+    dict[int, tuple[str, ...]]
+        Dictionary mapping floors to tuples of "ACQUIRE" and item name tokens.
+    """
     if not isinstance(items_purchased, list):
         raise TypeError(
             f"Input 'items_purchased' must be a list, got {type(items_purchased)}"
@@ -963,7 +1021,28 @@ def parse_items_purchased(
 def parse_path_per_floor(
     path_per_floor: List[Optional[str]],
 ) -> Dict[int, Dict[int, Tuple[str, ...]]]:
-    """Parses the map path, creating go_to tokens indexed by act level and floor number."""
+
+    """
+    Parse the path taken per floor, given a list of node types.
+
+    Parameters
+    ----------
+    path_per_floor : list[Optional[str]]
+        List of node types, where each node type is a string or None. If None, the
+        next entry will be in the next act level (e.g., Act 2, Floor 1).
+
+    Returns
+    -------
+    dict[int, dict[int, tuple[str, ...]]]
+        Dictionary mapping act levels to dictionaries of floor numbers to tuples of
+        "GO_TO" and node type tokens.
+
+    Notes
+    -----
+    The returned dictionary has act levels as keys (0-indexed), and dictionaries as
+    values. These dictionaries then map floor numbers (1-indexed, continuous through
+    the run) to tuples of tokens. The tokens are "GO_TO" and the node type string.
+    """
     if not isinstance(path_per_floor, list):
         logger.error(
             f"Invalid type for parse_path_per_floor: expected list, got {type(path_per_floor)}."
@@ -1027,9 +1106,27 @@ def parse_path_per_floor(
 
 def parse_cards_transformed(cards_transformed: List[str]) -> Tuple[str, ...]:
     """
-    Parses card transform events.
-    Assumes a flat list where every two elements form a transform pair (old_card_str -> new_card_str).
-    Generates ('TRANSFORM', old_card_name, [old_lvl], 'TO', new_card_name, [new_lvl]) tokens.
+    Parse a list of transformed cards into a tuple of tokens.
+
+    This function takes a list of strings, where each pair of strings represents a card
+    transformation. The first element of the pair is the original card name, and the second
+    element is the transformed card name. The function returns a tuple of tokens, where
+    each token is either "TRANSFORM", the original card name, "TO", or the transformed
+    card name.
+
+    The function logs the number of processed transform pairs and any errors
+    encountered while processing the input list.
+
+    Parameters
+    ----------
+    cards_transformed : List[str]
+        A list of strings, where each pair of strings represents a card transformation.
+
+    Returns
+    -------
+    Tuple[str, ...]
+        A tuple of tokens, where each token is either "TRANSFORM", the original card name,
+        "TO", or the transformed card name.
     """
     if not isinstance(cards_transformed, list):
         logger.error(
@@ -1083,7 +1180,28 @@ def parse_cards_transformed(cards_transformed: List[str]) -> Tuple[str, ...]:
 
 
 def tokenize_relic_lost(relic: str) -> Tuple[str, ...]:
-    """Creates tokens for losing a relic: (remove(relic_name),)"""
+    """
+    Tokenizes a single relic name into a tuple of tokens for losing that relic.
+
+    Parameters
+    ----------
+    relic : str
+        Relic name to be lost.
+
+    Returns
+    -------
+    tuple[str, ...]
+        Tuple of tokens, where each token is a REMOVE token followed by the relic name.
+
+    Raises
+    ------
+    TypeError
+        If input 'relic' is not a string.
+    ValueError
+        If input 'relic' is empty.
+    RuntimeError
+        If there is an unexpected error during tokenization.
+    """
     if not isinstance(relic, str) or not relic:  # Check for empty string
         logger.error(
             f"Invalid input for tokenize_relic_lost: Expected non-empty string, got {type(relic)}. Value: '{relic}'"
@@ -1098,7 +1216,28 @@ def tokenize_relic_lost(relic: str) -> Tuple[str, ...]:
 
 
 def parse_relics_lost(relics_lost: List[str]) -> Tuple[str, ...]:
-    """Parses a list of lost relics into REMOVE tokens."""
+    """
+    Converts a list of relic names into a tuple of tokens for losing each relic.
+
+    Parameters
+    ----------
+    relics_lost : List[str]
+        List of relic names to be lost.
+
+    Returns
+    -------
+    tuple[str, ...]
+        Tuple of tokens, where each token is a REMOVE token followed by the relic name.
+
+    Raises
+    ------
+    TypeError
+        If input 'relics_lost' is not a list.
+    ValueError
+        If any element in 'relics_lost' is not a string or empty.
+    RuntimeError
+        If any element in 'relics_lost' fails to be tokenized.
+    """
     if not isinstance(relics_lost, list):
         logger.error(f"Expected list for relics_lost, got {type(relics_lost)}")
         raise TypeError("Input 'relics_lost' must be a list")
@@ -1130,7 +1269,21 @@ def parse_relics_lost(relics_lost: List[str]) -> Tuple[str, ...]:
 
 
 def tokenize_knowing_skull_choices(event_choice: str) -> str:
-    """Convert the lengthy Knowing Skull choice down to one word per option. Returns a single string."""
+    """
+    Tokenizes the lengthy Knowing Skull choice string into a single string token.
+
+    Example logic: "Gain 1 Strength. Lose 5 HP." -> "Strength HP"
+
+    Args:
+        event_choice: str, the Knowing Skull choice event string.
+
+    Returns:
+        str, a single string token representing the choice.
+
+    Raises:
+        TypeError: if input is not a string.
+        RuntimeError: if an unexpected error occurs during tokenization.
+    """
     if not isinstance(event_choice, str):
         logger.error(
             f"Invalid type for Knowing Skull choice: expected str, got {type(event_choice)}. Value: {event_choice}"
@@ -1171,6 +1324,19 @@ def tokenize_knowing_skull_choices(event_choice: str) -> str:
 
 
 def tokenize_event_name(event_name_val: str) -> Tuple[str, ...]:
+    """
+    Tokenize an event name into a single string token.
+
+    Parameters
+    ----------
+    event_name_val : str
+        The event name to tokenize.
+
+    Returns
+    -------
+    Tuple[str, ...]
+        A tuple containing the single string token for the event name.
+    """
     if not isinstance(event_name_val, str):
         raise TypeError(f"Event name must be a string, got {type(event_name_val)}")
     if not event_name_val:
@@ -1179,6 +1345,26 @@ def tokenize_event_name(event_name_val: str) -> Tuple[str, ...]:
 
 
 def tokenize_player_choice(player_choice: str, event_name_val: str) -> Tuple[str, ...]:
+    """
+    Tokenize a player choice into a single string token.
+
+    The provided `event_name_val` is used to determine if the choice is a
+    "Knowing Skull" choice, in which case it is processed differently.
+    Otherwise, the `player_choice` is passed directly to `player_chose` to
+    determine the token.
+
+    Parameters
+    ----------
+    player_choice : str
+        The player choice to tokenize.
+    event_name_val : str
+        The name of the event which the player choice was made for.
+
+    Returns
+    -------
+    Tuple[str, ...]
+        A tuple containing a single string token representing the player choice.
+    """
     if not isinstance(player_choice, str):
         raise TypeError(f"Player choice must be a string, got {type(player_choice)}")
     if not isinstance(event_name_val, str):  # Should be validated before this typically
@@ -1197,6 +1383,19 @@ def tokenize_player_choice(player_choice: str, event_name_val: str) -> Tuple[str
 
 
 def tokenize_event_card_upgrade(cards_upgraded: List[str]) -> Tuple[str, ...]:
+    """
+    Tokenizes a list of card upgrades from an event.
+
+    Parameters
+    ----------
+    cards_upgraded : List[str]
+        List of card names upgraded by an event.
+
+    Returns
+    -------
+    tuple[str, ...]
+        Tuple of tokens, where each token is an upgraded card name.
+    """
     if not isinstance(cards_upgraded, list):
         raise TypeError(
             f"Input 'cards_upgraded' must be a list, got {type(cards_upgraded)}"
@@ -1222,6 +1421,19 @@ def tokenize_event_card_upgrade(cards_upgraded: List[str]) -> Tuple[str, ...]:
 
 
 def tokenize_event_card_transformed(cards_transformed: List[str]) -> Tuple[str, ...]:
+    """
+    Tokenizes a list of cards transformed by an event.
+
+    Parameters
+    ----------
+    cards_transformed : List[str]
+        List of card names transformed by an event.
+
+    Returns
+    -------
+    tuple[str, ...]
+        Tuple of tokens, where each token is either "TRANSFORM" or a card name.
+    """
     if not isinstance(cards_transformed, list):
         raise TypeError(
             f"Input 'cards_transformed' must be a list, got {type(cards_transformed)}"
@@ -1251,6 +1463,20 @@ def tokenize_event_card_transformed(cards_transformed: List[str]) -> Tuple[str, 
 
 
 def tokenize_relic_gained(relic: str) -> Tuple[str, ...]:  # Changed return type
+    """
+    Tokenizes a single relic obtained from an event.
+
+    Parameters
+    ----------
+    relic : str
+        Name of the relic obtained.
+
+    Returns
+    -------
+    tuple[str, ...]
+        Tuple of tokens, where the first token is "ACQUIRE" and the second token
+        is the relic name.
+    """
     if not isinstance(relic, str):
         raise TypeError(f"Relic name must be a string, got {type(relic)}")
     if not relic:
@@ -1259,6 +1485,19 @@ def tokenize_relic_gained(relic: str) -> Tuple[str, ...]:  # Changed return type
 
 
 def tokenize_event_relics_obtained(relics_gained: List[str]) -> Tuple[str, ...]:
+    """
+    Tokenizes a list of relics obtained from an event.
+
+    Parameters
+    ----------
+    relics_gained : List[str]
+        List of relic names obtained from an event.
+
+    Returns
+    -------
+    tuple[str, ...]
+        Tuple of tokens, where each token is either "ACQUIRE" or a relic name.
+    """
     if not isinstance(relics_gained, list):
         raise TypeError(
             f"Input 'relics_gained' must be a list, got {type(relics_gained)}"
@@ -1283,6 +1522,19 @@ def tokenize_event_relics_obtained(relics_gained: List[str]) -> Tuple[str, ...]:
 
 
 def tokenize_event_relics_lost(relics_lost_list: List[str]) -> Tuple[str, ...]:
+    """
+    Tokenizes a list of lost relics from an event.
+
+    Parameters
+    ----------
+    relics_lost_list : List[str]
+        List of lost relic names from an event.
+
+    Returns
+    -------
+    tuple[str, ...]
+        Tuple of tokens, where each token is a REMOVE token followed by the relic name.
+    """
     if not isinstance(relics_lost_list, list):
         raise TypeError(
             f"Input 'relics_lost' must be a list, got {type(relics_lost_list)}"
@@ -1308,6 +1560,19 @@ def tokenize_event_relics_lost(relics_lost_list: List[str]) -> Tuple[str, ...]:
 def tokenize_potions_obtained_single(
     potion: str,
 ) -> Tuple[str, ...]:  # Renamed to avoid confusion
+    """
+    Tokenizes a single potion obtained from an event.
+
+    Parameters
+    ----------
+    potion : str
+        Name of the potion obtained from an event.
+
+    Returns
+    -------
+    tuple[str, ...]
+        Tuple containing a single token, which is the ACQUIRE token for the potion.
+    """
     if not isinstance(potion, str):
         raise TypeError(f"Potion name must be a string, got {type(potion)}")
     if not potion:
@@ -1316,6 +1581,19 @@ def tokenize_potions_obtained_single(
 
 
 def tokenize_event_potions_obtained(potions: List[str]) -> Tuple[str, ...]:
+    """
+    Tokenizes a list of potions obtained from an event.
+
+    Parameters
+    ----------
+    potions : List[str]
+        List of potion names obtained from an event.
+
+    Returns
+    -------
+    tuple[str, ...]
+        Tuple of tokens, where each token is either "ACQUIRE" or a potion name.
+    """
     if not isinstance(potions, list):
         raise TypeError(f"Input 'potions' must be a list, got {type(potions)}")
     all_tokens: List[str] = []
@@ -1337,6 +1615,20 @@ def tokenize_event_potions_obtained(potions: List[str]) -> Tuple[str, ...]:
 
 
 def parse_events(events: List[Dict[str, Any]]) -> Dict[int, Tuple[str, ...]]:
+    """
+    Parse a list of event entries, each being a dictionary with specific keys,
+    into a dictionary mapping the floor to the corresponding event tokens.
+
+    Parameters
+    ----------
+    events: List[Dict[str, Any]]
+        The list of event entries to parse.
+
+    Returns
+    -------
+    Dict[int, Tuple[str, ...]]
+        A dictionary mapping each floor to its corresponding event tokens.
+    """
     if not isinstance(events, list):
         raise TypeError(f"Input 'events' must be a list of dicts, got {type(events)}")
 
@@ -1551,6 +1843,28 @@ def parse_events(events: List[Dict[str, Any]]) -> Dict[int, Tuple[str, ...]]:
 def parse_campfire_choices(
     campfire_choices: list[dict[str, Any]],
 ) -> dict[int, tuple[str, ...]]:
+    """
+    Parse campfire choices, mapping floor to choice tokens.
+
+    Parameters
+    ----------
+    campfire_choices: list[dict[str, Any]]
+        A list of dictionaries, each representing a campfire choice.
+        Required keys in each dictionary are:
+        - "floor": The floor on which the choice was made.
+        - "key": The type of choice made, which may be one of
+          - "REST": Rest at the campfire.
+          - "SMITH": Smith a card.
+          - "LIFT": Lift a curse.
+          - "DIG": Dig a relic.
+          - "PURGE": Purge a card.
+          - "RECALL": Recall a card.
+
+    Returns
+    -------
+    parsed_choices: dict[int, tuple[str, ...]]
+        A dictionary mapping each floor to a tuple of tokens representing the choice made.
+    """
     parsed_choices = {}
     for choice in campfire_choices:
         floor = choice["floor"]
@@ -1579,6 +1893,21 @@ def parse_campfire_choices(
 def parse_floor_purchases(
     items_purchased: list[str], item_purchase_floors: list[int]
 ) -> dict[int, list[str]]:
+    """
+    Parse purchased items, given lists of purchased items and floors on which they were purchased.
+
+    Parameters
+    ----------
+    items_purchased : list[str]
+        List of item names that were purchased from the merchant in the run file.
+    item_purchase_floors : list[int]
+        List of floors on which items were purchased, in same order as the items in `items_purchased`.
+
+    Returns
+    -------
+    dict[int, list[str]]
+        Dictionary mapping floors to tuples of "ACQUIRE" and item name tokens.
+    """
     purchases = defaultdict(list)
     for item, floor in zip(items_purchased, item_purchase_floors):
         purchases[floor].extend(("ACQUIRE", *tokenize_card(item)))
@@ -1588,6 +1917,21 @@ def parse_floor_purchases(
 def parse_items_purged(
     items_purged: list[str], items_purged_floors: list[int]
 ) -> dict[int, list[str]]:
+    """
+    Parse items purged, given lists of purged items and floors on which they were purged.
+
+    Parameters
+    ----------
+    items_purged : list[str]
+        List of item names that were purged from the run file.
+    items_purged_floors : list[int]
+        List of floors on which items were purged, in same order as the items in `items_purged`.
+
+    Returns
+    -------
+    dict[int, list[str]]
+        Dictionary mapping floors to tuples of "REMOVE" and item name tokens.
+    """
     purged = defaultdict(list)
     for item, floor in zip(items_purged, items_purged_floors):
         purged[floor].extend(("REMOVE", *tokenize_card(item)))
@@ -1597,6 +1941,21 @@ def parse_items_purged(
 def parse_potion_usage(
     potions_obtained: list[dict[str, int | str]], potion_usage: list[int]
 ) -> dict[int, tuple[str, ...]]:
+    """
+    Parse potion usage, given potion acquisition data and floors on which potions were used.
+
+    Parameters
+    ----------
+    potions_obtained : list[dict[str, int | str]]
+        List of dictionaries, each containing "floor" and "key" (potion name) from run file.
+    potion_usage : list[int]
+        List of floors on which potions were used from run file.
+
+    Returns
+    -------
+    dict[int, tuple[str, ...]]
+        Dictionary mapping floors to tuples of "POTION USED" or "POTION POTENTIALLY USED" tokens and their corresponding potion names.
+    """
     potion_acquisition = {p_o["floor"]: p_o["key"] for p_o in potions_obtained}
     unique_floors = set(chain(potion_acquisition.keys(), potion_usage))
     all_floors = sorted(list(unique_floors))
