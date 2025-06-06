@@ -8,6 +8,7 @@ from SpireModel.logreader import parse_items_purged
 from SpireModel.logreader import parse_potion_usage
 from SpireModel.logreader import standardize_strikes_and_defends
 from SpireModel.logreader import tokenize_card
+from SpireModel.logreader import tokenize_damage_taken
 
 
 @fixture()
@@ -195,15 +196,18 @@ def test_tokenize_into_masked_digits():
     assert masked == ("1XXX", "9XX", "3X", "4")
 
 
-def test_tokenize_card():
-    card = tokenize_card("Strike_G")
-    assert card == ("Strike",)
+class TestTokenizeCard:
+    def test_tokenize_card_base(self):
+        card = tokenize_card("Strike_G")
+        assert card == ("Strike",)
 
-    card = tokenize_card("Strike_G+1")
-    assert card == ("Strike", "1")
+    def test_tokenize_card_plus_one(self):
+        card = tokenize_card("Strike_G+1")
+        assert card == ("Strike", "1")
 
-    card = tokenize_card("Searing Blow+99")
-    assert card == ("Searing Blow", "9X", "9")
+    def test_tokenize_card_plus_number(self):
+        card = tokenize_card("Searing Blow+99")
+        assert card == ("Searing Blow", "9X", "9")
 
 
 def test_tokenize_transform_card():
@@ -221,7 +225,7 @@ def test_tokenize_transform_card():
     assert out[2:4] == ("TRANSFORM", "Strike")
 
 
-def test_tokenize_damage_taken():
+def test_tokenize_damage_taken_in_event():
     events = [
         {
             "player_choice": "Change",
@@ -233,6 +237,18 @@ def test_tokenize_damage_taken():
     out = parse_events(events)
     out = out[5]
     assert out[2:6] == ("LOSE", "9X", "9", "HEALTH")
+
+
+class TestTokenizeDamageTaken:
+    def test_tokenize_1_damage(self):
+        damage = 1
+        damage_out = tokenize_damage_taken(damage)
+        assert damage_out == ("LOSE", "1", "HEALTH")
+
+    def test_tokenize_10_damage(self):
+        damage = 10
+        damage_out = tokenize_damage_taken(damage)
+        assert damage_out == ("LOSE", "1X", "0", "HEALTH")
 
 
 def test_tokenize_damage_healed():
