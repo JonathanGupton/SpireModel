@@ -1,4 +1,4 @@
-from pytest import fixture
+import pytest
 
 from SpireModel.logreader import parse_campfire_choices
 from SpireModel.logreader import parse_events
@@ -9,82 +9,7 @@ from SpireModel.logreader import parse_potion_usage
 from SpireModel.logreader import standardize_strikes_and_defends
 from SpireModel.logreader import tokenize_card
 from SpireModel.logreader import tokenize_damage_taken
-
-
-@fixture()
-def events_list():
-    return [
-        {
-            "cards_removed": ["Strike_G"],
-            "damage_healed": 0.0,
-            "max_hp_gain": 0.0,
-            "max_hp_loss": 0.0,
-            "gold_gain": 0.0,
-            "event_name": "Purifier",
-            "player_choice": "Purged",
-            "floor": 2.0,
-            "gold_loss": 0.0,
-            "damage_taken": 0.0,
-        },
-        {
-            "damage_healed": 0.0,
-            "max_hp_gain": 0.0,
-            "max_hp_loss": 0.0,
-            "gold_gain": 0.0,
-            "event_name": "Back to Basics",
-            "player_choice": "Simplicity",
-            "floor": 20.0,
-            "gold_loss": 0.0,
-            "damage_taken": 0.0,
-            "cards_upgraded": [
-                "Strike_G",
-                "Strike_G",
-                "Strike_G",
-                "Defend_G",
-                "Defend_G",
-                "Defend_G",
-                "Defend_G",
-                "Defend_G",
-            ],
-        },
-        {
-            "damage_healed": 0.0,
-            "max_hp_gain": 0.0,
-            "max_hp_loss": 0.0,
-            "gold_gain": 0.0,
-            "event_name": "Big Fish",
-            "player_choice": "Box",
-            "floor": 1.0,
-            "gold_loss": 0.0,
-            "damage_taken": 0.0,
-            "relics_obtained": ["Tiny Chest"],
-            "cards_obtained": ["Regret"],
-        },
-        {
-            "damage_healed": 0.0,
-            "max_hp_gain": 0.0,
-            "max_hp_loss": 0.0,
-            "gold_gain": 175.0,
-            "event_name": "Liars Game",
-            "player_choice": "AGREE",
-            "floor": 5.0,
-            "gold_loss": 0.0,
-            "damage_taken": 0.0,
-            "cards_obtained": ["Doubt"],
-        },
-        {
-            "cards_removed": ["Doubt"],
-            "damage_healed": 0.0,
-            "max_hp_gain": 0.0,
-            "max_hp_loss": 0.0,
-            "gold_gain": 0.0,
-            "event_name": "The Cleric",
-            "player_choice": "Card Removal",
-            "floor": 10.0,
-            "gold_loss": 50.0,
-            "damage_taken": 0.0,
-        },
-    ]
+from SpireModel.logreader import tokenize_health_healed
 
 
 def test_each_card_remove():
@@ -251,7 +176,7 @@ class TestTokenizeDamageTaken:
         assert damage_out == ("LOSE", "1X", "0", "HEALTH")
 
 
-def test_tokenize_damage_healed():
+def test_tokenize_damage_healed_in_event():
     events = [
         {
             "player_choice": "Change",
@@ -265,7 +190,23 @@ def test_tokenize_damage_healed():
     assert out[2:6] == ("GAIN", "9X", "9", "HEALTH")
 
 
-def test_tokenize_gold_gain():
+class TestDamageHealed:
+    @pytest.mark.parametrize(
+        "health,expected",
+        [(1, ("GAIN", "1", "HEALTH")), (10, ("GAIN", "1X", "0", "HEALTH"))],
+    )
+    def test_tokenize_health_healed(self, health, expected):
+        assert tokenize_health_healed(health) == expected
+
+    @pytest.mark.parametrize(
+        "health,expected",
+        [("1", ("GAIN", "1", "HEALTH")), ("10", ("GAIN", "1X", "0", "HEALTH"))],
+    )
+    def test_tokenize_health_healed_strs(self, health, expected):
+        assert tokenize_health_healed(health) == expected
+
+
+def test_tokenize_gold_gain_in_event():
     events = [
         {
             "player_choice": "Change",
@@ -277,6 +218,10 @@ def test_tokenize_gold_gain():
     out = parse_events(events)
     out = out[5]
     assert out[2:7] == ("ACQUIRE", "2XX", "7X", "5", "GOLD")
+
+
+def test_max_():
+    pass
 
 
 def test_tokenize_gold_loss():
