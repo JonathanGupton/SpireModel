@@ -9,7 +9,9 @@ from SpireModel.logreader import parse_potion_usage
 from SpireModel.logreader import standardize_strikes_and_defends
 from SpireModel.logreader import tokenize_card
 from SpireModel.logreader import tokenize_damage_taken
+from SpireModel.logreader import tokenize_gold_lost
 from SpireModel.logreader import tokenize_health_healed
+from SpireModel.logreader import tokenize_max_health_gained
 
 
 def test_each_card_remove():
@@ -135,7 +137,7 @@ class TestTokenizeCard:
         assert card == ("Searing Blow", "9X", "9")
 
 
-def test_tokenize_transform_card():
+def test_tokenize_transform_card_in_event():
     events = [
         {
             "cards_transformed": ["Strike_P"],
@@ -164,18 +166,6 @@ def test_tokenize_damage_taken_in_event():
     assert out[2:6] == ("LOSE", "9X", "9", "HEALTH")
 
 
-class TestTokenizeDamageTaken:
-    def test_tokenize_1_damage(self):
-        damage = 1
-        damage_out = tokenize_damage_taken(damage)
-        assert damage_out == ("LOSE", "1", "HEALTH")
-
-    def test_tokenize_10_damage(self):
-        damage = 10
-        damage_out = tokenize_damage_taken(damage)
-        assert damage_out == ("LOSE", "1X", "0", "HEALTH")
-
-
 def test_tokenize_damage_healed_in_event():
     events = [
         {
@@ -188,6 +178,46 @@ def test_tokenize_damage_healed_in_event():
     out = parse_events(events)
     out = out[5]
     assert out[2:6] == ("GAIN", "9X", "9", "HEALTH")
+
+
+def test_tokenize_gold_gain_in_event():
+    events = [
+        {
+            "player_choice": "Change",
+            "event_name": "Living Wall",
+            "floor": 5,
+            "gold_gain": 275,
+        },
+    ]
+    out = parse_events(events)
+    out = out[5]
+    assert out[2:7] == ("ACQUIRE", "2XX", "7X", "5", "GOLD")
+
+
+def test_tokenize_gold_loss_in_event():
+    events = [
+        {
+            "player_choice": "Change",
+            "event_name": "Living Wall",
+            "floor": 5,
+            "gold_loss": 275,
+        },
+    ]
+    out = parse_events(events)
+    out = out[5]
+    assert out[2:7] == ("LOSE", "2XX", "7X", "5", "GOLD")
+
+
+class TestTokenizeDamageTaken:
+    def test_tokenize_1_damage(self):
+        damage = 1
+        damage_out = tokenize_damage_taken(damage)
+        assert damage_out == ("LOSE", "1", "HEALTH")
+
+    def test_tokenize_10_damage(self):
+        damage = 10
+        damage_out = tokenize_damage_taken(damage)
+        assert damage_out == ("LOSE", "1X", "0", "HEALTH")
 
 
 class TestDamageHealed:
@@ -206,36 +236,42 @@ class TestDamageHealed:
         assert tokenize_health_healed(health) == expected
 
 
-def test_tokenize_gold_gain_in_event():
-    events = [
-        {
-            "player_choice": "Change",
-            "event_name": "Living Wall",
-            "floor": 5,
-            "gold_gain": 275,
-        },
-    ]
-    out = parse_events(events)
-    out = out[5]
-    assert out[2:7] == ("ACQUIRE", "2XX", "7X", "5", "GOLD")
+class TestTokenizeMaxHealthGained:
+    @pytest.mark.parametrize(
+        "max_health,expected",
+        [
+            (1, ("INCREASE", "1", "MAX HEALTH")),
+            (200, ("INCREASE", "2XX", "0X", "0", "MAX HEALTH")),
+        ],
+    )
+    def test_max_health_gained_ints(self, max_health, expected):
+        assert tokenize_max_health_gained(max_health) == expected
+
+    @pytest.mark.parametrize(
+        "max_health,expected",
+        [
+            ("1", ("INCREASE", "1", "MAX HEALTH")),
+            ("200", ("INCREASE", "2XX", "0X", "0", "MAX HEALTH")),
+        ],
+    )
+    def test_max_health_gained_ints(self, max_health, expected):
+        assert tokenize_max_health_gained(max_health) == expected
 
 
-def test_max_():
-    pass
+class TestTokenizeGoldLost:
+    @pytest.mark.parametrize(
+        "gold_lost,expected",
+        [(1, ("LOSE", "1", "GOLD")), (123, ("LOSE", "1XX", "2X", "3", "GOLD"))],
+    )
+    def test_tokenize_gold_lost_int(self, gold_lost, expected):
+        assert tokenize_gold_lost(gold_lost) == expected
 
-
-def test_tokenize_gold_loss():
-    events = [
-        {
-            "player_choice": "Change",
-            "event_name": "Living Wall",
-            "floor": 5,
-            "gold_loss": 275,
-        },
-    ]
-    out = parse_events(events)
-    out = out[5]
-    assert out[2:7] == ("LOSE", "2XX", "7X", "5", "GOLD")
+    @pytest.mark.parametrize(
+        "gold_lost,expected",
+        [("1", ("LOSE", "1", "GOLD")), ("123", ("LOSE", "1XX", "2X", "3", "GOLD"))],
+    )
+    def test_tokenize_gold_lost_str(self, gold_lost, expected):
+        assert tokenize_gold_lost(gold_lost) == expected
 
 
 def test_tokenize_max_hp_gain():
