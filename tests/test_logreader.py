@@ -6,6 +6,7 @@ from SpireModel.logreader import _tokenize_into_masked_digits
 from SpireModel.logreader import parse_floor_purchases
 from SpireModel.logreader import parse_items_purged
 from SpireModel.logreader import parse_potion_usage
+from SpireModel.logreader import standardize_strikes_and_defends
 from SpireModel.logreader import tokenize_card
 
 
@@ -478,3 +479,30 @@ def test_parse_potion_usage_three_potions_acquired_two_used():
             "Dummy Potion",
         )
     }
+
+
+class TestStandardizeStrikesAndDefends:
+    def test_defend_r_returns_defend(self):
+        card = "Defend_R"
+        card = standardize_strikes_and_defends(card)
+        assert card == "Defend"
+
+    def test_defend_r1_returns_defend_1(self):
+        card = "Defend_R+1"
+        card = standardize_strikes_and_defends(card)
+        assert card == "Defend+1"
+
+    def test_strike_r_returns_strike(self):
+        card = "Strike_R"
+        card = standardize_strikes_and_defends(card)
+        assert card == "Strike"
+
+    def test_strike_r1_returns_strike_1(self):
+        card = "Strike_R+1"
+        card = standardize_strikes_and_defends(card)
+        assert card == "Strike+1"
+
+    def test_unrelated_card_returns_itself(self):
+        card = "Unrelated"
+        card = standardize_strikes_and_defends(card)
+        assert card == "Unrelated"
