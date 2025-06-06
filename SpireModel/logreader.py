@@ -30,10 +30,28 @@ logger = logging.getLogger(__name__)
 
 
 def _tokenize_numbers_individually(number: str) -> Generator[str, None, None]:
-    """Convert a str number into the individual numbers.
-    Example:
-        number: "1934"
-        yields: "1", "9", "3", "4"
+    """
+    Convert a str number into the individual numbers.
+
+    Parameters
+    ----------
+    number : str
+        The number to tokenize.
+
+    Yields
+    ------
+    str
+        A generator of strings, each a single digit from the input number.
+
+    Raises
+    ------
+    Exception
+        If an unexpected error occurs during tokenization.
+
+     Examples
+    --------
+    >>> tuple(_tokenize_numbers_individually("1934"))
+    ("1", "9", "3", "4")
     """
     try:
         for n in number:
@@ -43,12 +61,32 @@ def _tokenize_numbers_individually(number: str) -> Generator[str, None, None]:
         raise
 
 
-def _tokenize_into_masked_digits(number: str) -> Generator[str, None, None]:
-    """Yields each digit of the input string followed by Xs, representing place value.
 
-    Example:
-    input: "1934"
-    yields: "1XXX", "9XX", "3X", "4"
+def _tokenize_into_masked_digits(number: str) -> Generator[str, None, None]:
+    """
+    Converts a str number into a generator of strings, each a single digit from the input number,
+    but with all digits after the first one replaced with 'X'.
+
+    Parameters
+    ----------
+    number : str
+        The number to tokenize.
+
+    Yields
+    ------
+    str
+        A generator of strings, each a single digit from the input number, with all digits after
+        the first one replaced with 'X'.
+
+    Raises
+    ------
+    Exception
+        If an unexpected error occurs during tokenization.
+
+    Examples
+    --------
+    >>> tuple(_tokenize_into_masked_digits("1934"))
+    ("1XXX", "9XX", "3X", "4")
     """
     length = len(number)
     for i, digit in enumerate(number):
@@ -61,7 +99,28 @@ def tokenize_number(
         [str], Generator[str, None, None]
     ] = _tokenize_into_masked_digits,
 ) -> Generator[str, None, None]:
-    """Takes a number in string form and splits it into individual characters."""
+    """
+    Tokenizes a given number into a generator of strings, by default into masked digits.
+
+    Parameters
+    ----------
+    number : str
+        The number to tokenize.
+    number_tokenizer : Callable[[str], Generator[str, None, None]], optional
+        A function that takes a string and yields a generator of strings. Defaults to
+        `_tokenize_into_masked_digits`.
+
+    Yields
+    ------
+    str
+        A generator of strings, either the individual digits of the number or the
+        masked digits depending on the `number_tokenizer` used.
+
+    Raises
+    ------
+    TypeError
+        If the input `number` is not a string.
+    """
     if not isinstance(number, str):
         logger.error(
             f"Invalid type for tokenize_number: expected str, got {type(number)}. Value: {number}"
@@ -81,6 +140,33 @@ STRIKE_PLUS_PATTERN = r"Strike_\w{1}\+1"
 
 
 def standardize_strikes_and_defends(card: str) -> str:
+    """
+    Standardize strike and defend card names.
+
+    The Defend and Strike cards with modifiers (+1, +2, etc.) are standardized
+    to simply "Defend" and "Strike" respectively.
+
+    Parameters
+    ----------
+    card : str
+        The card name to standardize.
+
+    Returns
+    -------
+    str
+        The standardized card name.
+
+    Examples
+    --------
+    >>> standardize_strikes_and_defends("Defend_R")
+    'Defend'
+    >>> standardize_strikes_and_defends("Defend_R+1")
+    'Defend+1'
+    >>> standardize_strikes_and_defends("Strike_R")
+    'Strike'
+    >>> standardize_strikes_and_defends("Strike_R+1")
+    'Strike+1'
+    """
     if re.fullmatch(DEFEND_PATTERN, card):
         return "Defend"
     if re.fullmatch(DEFEND_PLUS_PATTERN, card):
@@ -93,7 +179,28 @@ def standardize_strikes_and_defends(card: str) -> str:
 
 
 def tokenize_card(card: str) -> Tuple[str, ...]:
-    """Splits a card string like 'Bash+1' into ('Bash', '1') or ('Strike',)"""
+    """
+    Tokenizes a given card into a tuple of strings.
+
+    Parameters
+    ----------
+    card : str
+        The card name to tokenize.
+
+    Returns
+    -------
+    tuple[str, ...]
+        A tuple of strings, either the individual parts of the card name or the
+        card name and level if the card name contains a "+". The level is then
+        further tokenized into masked digits.
+
+    Raises
+    ------
+    TypeError
+        If the input `card` is not a string.
+    ValueError
+        If the input `card` is not in the expected format.
+    """
     if not isinstance(card, str):
         logger.error(
             f"Invalid type for tokenize_card: expected str, got {type(card)}. Value: {card}"
@@ -121,32 +228,6 @@ def tokenize_card(card: str) -> Tuple[str, ...]:
     except Exception as e:
         logger.exception(f"Error tokenizing card: '{card}'")
         raise ValueError(f"Failed to tokenize card: {card}") from e
-
-
-def _tokenize_value_change(
-    action: str, value: int | str, unit: str, value_type: str = "value"
-) -> Tuple[str, ...]:
-    """Helper function for tokenizing gain/loss of health, gold, etc."""
-    if not isinstance(action, str):
-        raise TypeError(f"Input 'action' must be a string, got {type(action)}")
-    if not isinstance(value, (int, str)):
-        logger.error(
-            f"Invalid {value_type} type for {action}: expected int or str, got {type(value)}. Value: {value}"
-        )
-        raise TypeError(
-            f"Input '{value_type}' must be an int or str, got {type(value)}"
-        )
-    if not isinstance(unit, str):
-        raise TypeError(f"Input 'unit' must be a string, got {type(unit)}")
-
-    try:
-        str_value = str(value)
-        tokens: Tuple[str, ...] = (action, *tokenize_number(str_value), unit)
-        logger.debug(f"Tokenized {action} {value} {unit}: {tokens}")
-        return tokens
-    except Exception as e:
-        logger.exception(f"Error during tokenization: {action} {value} {unit}")
-        raise ValueError(f"Failed to tokenize {action} {value} {unit}") from e
 
 
 def tokenize_damage_taken(damage_taken: int | str) -> Tuple[str, ...]:
@@ -474,7 +555,6 @@ def get_starting_cards(data: Dict[str, Any]) -> Tuple[str, ...]:
 
 def get_starting_relics(data: Dict[str, Any]) -> Tuple[str, ...]:
 
-
     if not isinstance(data, dict):
         raise TypeError(f"Input 'data' must be a dict, got {type(data)}")
     try:
@@ -573,7 +653,6 @@ def get_neow_bonus(data: Dict[str, Any]) -> Tuple[str, ...]:
 
 def get_neow_cost(data: Dict[str, Any]) -> Tuple[str, ...]:
 
-
     if not isinstance(data, dict):
         raise TypeError(f"Input 'data' must be a dict, got {type(data)}")
     try:
@@ -610,8 +689,6 @@ def get_neow_cost(data: Dict[str, Any]) -> Tuple[str, ...]:
 def parse_card_choices(
     card_choices: List[Dict[str, Any]],
 ) -> Dict[int, Tuple[str, ...]]:
-
-
 
     if not isinstance(card_choices, list):
         logger.error(
@@ -865,7 +942,6 @@ def parse_damage_taken(
 
 
 def parse_potions_obtained(potions: List[Dict[str, Any]]) -> Dict[int, Tuple[str, ...]]:
-
     """
     Parse potion obtained events, mapping floor to "ACQUIRE" and potion name tokens.
 
@@ -945,7 +1021,6 @@ def parse_potions_obtained(potions: List[Dict[str, Any]]) -> Dict[int, Tuple[str
 def parse_items_purchased(
     items_purchased: List[str], item_purchase_floors: List[int]
 ) -> Dict[int, Tuple[str, ...]]:
-
     """
     Parse purchased items, given lists of purchased items and floors on which they were purchased.
 
@@ -1021,7 +1096,6 @@ def parse_items_purchased(
 def parse_path_per_floor(
     path_per_floor: List[Optional[str]],
 ) -> Dict[int, Dict[int, Tuple[str, ...]]]:
-
     """
     Parse the path taken per floor, given a list of node types.
 
