@@ -61,7 +61,6 @@ def _tokenize_numbers_individually(number: str) -> Generator[str, None, None]:
         raise
 
 
-
 def _tokenize_into_masked_digits(number: str) -> Generator[str, None, None]:
     """
     Converts a str number into a generator of strings, each a single digit from the input number,
@@ -168,13 +167,13 @@ def standardize_strikes_and_defends(card: str) -> str:
     'Strike+1'
     """
     if re.fullmatch(DEFEND_PATTERN, card):
-        return "Defend"
+        card = "Defend"
     if re.fullmatch(DEFEND_PLUS_PATTERN, card):
-        return "Defend+1"
+        card = "Defend+1"
     if re.fullmatch(STRIKE_PATTERN, card):
-        return "Strike"
+        card = "Strike"
     if re.fullmatch(STRIKE_PLUS_PATTERN, card):
-        return "Strike+1"
+        card = "Strike+1"
     return card
 
 
@@ -232,12 +231,12 @@ def tokenize_card(card: str) -> Tuple[str, ...]:
 
 def tokenize_damage_taken(damage_taken: int | str) -> Tuple[str, ...]:
     """('LOSE' '[N]' 'HEALTH')"""
-    return ("LOSE", *tokenize_number(str(int(damage_taken))), "HEALTH")
+    return "LOSE", *tokenize_number(str(int(damage_taken))), "HEALTH"
 
 
 def tokenize_health_healed(health_healed: int | str) -> Tuple[str, ...]:
     """("GAIN", [N], "HEALTH")"""
-    return ("GAIN", *tokenize_number(str(int(health_healed))), "HEALTH")
+    return "GAIN", *tokenize_number(str(int(health_healed))), "HEALTH"
 
 
 def tokenize_max_health_gained(max_health_gained: int | str) -> Tuple[str, ...]:
@@ -378,28 +377,6 @@ def tokenize_upgrade_card(card: str) -> Tuple[str, ...]:
         raise
 
 
-def tokenize_event_relic_acquisition(relics: List[str]) -> Tuple[str, ...]:
-    if not isinstance(relics, list):
-        logger.error(f"Expected list for event relic acquisition, got {type(relics)}")
-        raise TypeError("Input 'relics' must be a list")
-
-    all_tokens: List[str] = []
-    for i, relic in enumerate(relics):
-        if not isinstance(relic, str) or not relic:  # Check for empty string too
-            logger.warning(
-                f"Skipping invalid or empty relic entry at index {i} in event acquisition: '{relic}'"
-            )
-            continue
-        try:
-            token = acquire(relic)  # Relics are usually simple strings
-            all_tokens.append(token)
-            logger.debug(f"Event acquired relic: {relic} -> {token}")
-        except Exception as e:  # acquire itself might raise an error on invalid input
-            logger.error(f"Failed to create acquire token for relic '{relic}': {e}")
-            continue
-    return tuple(all_tokens)
-
-
 # --- Data Parsing Functions ---
 
 
@@ -416,9 +393,7 @@ def get_character_token(data: Dict[str, Any]) -> Tuple[str, ...]:
                 f"Expected string for 'character_chosen', got {type(character)}"
             )
         if character not in CHARACTERS:
-            logger.warning(
-                f"Character '{character}' not in known CHARACTERS: {CHARACTERS}. Proceeding, but this may indicate an issue."
-            )
+            raise ValueError(f"Invalid character found: {character}")
         logger.info(f"Character chosen: {character}")
         return (character,)
     except KeyError:
@@ -459,10 +434,7 @@ def get_ascension_tokens(data: Dict[str, Any]) -> Tuple[str, ...]:
 
             str_level = str(ascension_level)
             if not str_level.isdigit():
-                logger.warning(
-                    f"Ascension level '{str_level}' is not purely digits. Proceeding with tokenization."
-                )
-            logger.info(f"Ascension mode active: Level {str_level}")
+                raise ValueError("Ascension level is non-digit value")
             return ("ASCENSION MODE", *tokenize_number(str_level))
         else:
             logger.info("Ascension mode not active.")
@@ -1215,6 +1187,7 @@ def parse_cards_transformed(cards_transformed: List[str]) -> Tuple[str, ...]:
         )
 
     logger.info(f"Parsing {len(cards_transformed)//2} potential card transform pairs.")
+    old_tokens, new_tokens = (), ()
     for i in range(0, len(cards_transformed) - 1, 2):
         old_card_str = cards_transformed[i]
         new_card_str = cards_transformed[i + 1]

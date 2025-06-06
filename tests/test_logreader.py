@@ -1,5 +1,7 @@
 import pytest
 
+from SpireModel.logreader import get_ascension_tokens
+from SpireModel.logreader import get_character_token
 from SpireModel.logreader import parse_campfire_choices
 from SpireModel.logreader import parse_events
 from SpireModel.logreader import _tokenize_into_masked_digits
@@ -137,75 +139,140 @@ class TestTokenizeCard:
         assert card == ("Searing Blow", "9X", "9")
 
 
-def test_tokenize_transform_card_in_event():
-    events = [
-        {
-            "cards_transformed": ["Strike_P"],
-            "player_choice": "Change",
-            "event_name": "Living Wall",
-            "floor": 5,
-            "cards_obtained": ["Wallop"],
-        },
-    ]
-    out = parse_events(events)
-    out = out[5]
-    assert out[2:4] == ("TRANSFORM", "Strike")
+class TestEventProcessing:
+    def test_tokenize_max_hp_gain(self):
+        events = [
+            {
+                "player_choice": "Change",
+                "event_name": "Living Wall",
+                "floor": 5,
+                "max_hp_gain": 275,
+            },
+        ]
+        out = parse_events(events)
+        out = out[5]
+        assert out[2:7] == ("INCREASE", "2XX", "7X", "5", "MAX HEALTH")
 
+    def test_tokenize_max_hp_loss(self):
+        events = [
+            {
+                "player_choice": "Change",
+                "event_name": "Living Wall",
+                "floor": 5,
+                "max_hp_loss": 275,
+            },
+        ]
+        out = parse_events(events)
+        print(out)
+        out = out[5]
+        assert out[2:7] == ("DECREASE", "2XX", "7X", "5", "MAX HEALTH")
 
-def test_tokenize_damage_taken_in_event():
-    events = [
-        {
-            "player_choice": "Change",
-            "event_name": "Living Wall",
-            "floor": 5,
-            "damage_taken": 99.0,
-        },
-    ]
-    out = parse_events(events)
-    out = out[5]
-    assert out[2:6] == ("LOSE", "9X", "9", "HEALTH")
+    def test_relics_obtained(self):
+        events = [
+            {
+                "player_choice": "Change",
+                "event_name": "Living Wall",
+                "floor": 5,
+                "relics_obtained": ["Relic obtained 1", "Relic obtained 2"],
+            }
+        ]
+        out = parse_events(events)
+        out = out[5]
+        assert out[2:4] == ("ACQUIRE", "Relic obtained 1")
 
+    def test_relics_lost(self):
+        events = [
+            {
+                "player_choice": "Change",
+                "event_name": "Living Wall",
+                "floor": 5,
+                "relics_lost": ["Relic lost 1", "Relic lost 2"],
+            }
+        ]
+        out = parse_events(events)
+        out = out[5]
+        print(out)
+        assert out[2:4] == ("REMOVE", "Relic lost 1")
 
-def test_tokenize_damage_healed_in_event():
-    events = [
-        {
-            "player_choice": "Change",
-            "event_name": "Living Wall",
-            "floor": 5,
-            "damage_healed": 99.0,
-        },
-    ]
-    out = parse_events(events)
-    out = out[5]
-    assert out[2:6] == ("GAIN", "9X", "9", "HEALTH")
+    def test_acquire_potion(self):
+        events = [
+            {
+                "player_choice": "Change",
+                "event_name": "Living Wall",
+                "floor": 5,
+                "potions_obtained": ["Potion obtained 1", "Potion obtained 2"],
+            }
+        ]
+        out = parse_events(events)
+        out = out[5]
+        print(out)
+        assert out[2:4] == ("ACQUIRE", "Potion obtained 1")
 
+    def test_tokenize_transform_card(self):
+        events = [
+            {
+                "cards_transformed": ["Strike_P"],
+                "player_choice": "Change",
+                "event_name": "Living Wall",
+                "floor": 5,
+                "cards_obtained": ["Wallop"],
+            },
+        ]
+        out = parse_events(events)
+        out = out[5]
+        assert out[2:4] == ("TRANSFORM", "Strike")
 
-def test_tokenize_gold_gain_in_event():
-    events = [
-        {
-            "player_choice": "Change",
-            "event_name": "Living Wall",
-            "floor": 5,
-            "gold_gain": 275,
-        },
-    ]
-    out = parse_events(events)
-    out = out[5]
-    assert out[2:7] == ("ACQUIRE", "2XX", "7X", "5", "GOLD")
+    def test_tokenize_damage_taken(self):
+        events = [
+            {
+                "player_choice": "Change",
+                "event_name": "Living Wall",
+                "floor": 5,
+                "damage_taken": 99.0,
+            },
+        ]
+        out = parse_events(events)
+        out = out[5]
+        assert out[2:6] == ("LOSE", "9X", "9", "HEALTH")
 
+    def test_tokenize_damage_healed(self):
+        events = [
+            {
+                "player_choice": "Change",
+                "event_name": "Living Wall",
+                "floor": 5,
+                "damage_healed": 99.0,
+            },
+        ]
+        out = parse_events(events)
+        out = out[5]
+        assert out[2:6] == ("GAIN", "9X", "9", "HEALTH")
 
-def test_tokenize_gold_loss_in_event():
-    events = [
-        {
-            "player_choice": "Change",
-            "event_name": "Living Wall",
-            "floor": 5,
-            "gold_loss": 275,
-        },
-    ]
-    out = parse_events(events)
-    out = out[5]
-    assert out[2:7] == ("LOSE", "2XX", "7X", "5", "GOLD")
+    def test_tokenize_gold_gain(self):
+        events = [
+            {
+                "player_choice": "Change",
+                "event_name": "Living Wall",
+                "floor": 5,
+                "gold_gain": 275,
+            },
+        ]
+        out = parse_events(events)
+        out = out[5]
+        assert out[2:7] == ("ACQUIRE", "2XX", "7X", "5", "GOLD")
+
+    def test_tokenize_gold_loss(self):
+        events = [
+            {
+                "player_choice": "Change",
+                "event_name": "Living Wall",
+                "floor": 5,
+                "gold_loss": 275,
+            },
+        ]
+        out = parse_events(events)
+        out = out[5]
+        assert out[2:7] == ("LOSE", "2XX", "7X", "5", "GOLD")
 
 
 class TestTokenizeDamageTaken:
@@ -272,79 +339,6 @@ class TestTokenizeGoldLost:
     )
     def test_tokenize_gold_lost_str(self, gold_lost, expected):
         assert tokenize_gold_lost(gold_lost) == expected
-
-
-def test_tokenize_max_hp_gain():
-    events = [
-        {
-            "player_choice": "Change",
-            "event_name": "Living Wall",
-            "floor": 5,
-            "max_hp_gain": 275,
-        },
-    ]
-    out = parse_events(events)
-    out = out[5]
-    assert out[2:7] == ("INCREASE", "2XX", "7X", "5", "MAX HEALTH")
-
-
-def test_tokenize_max_hp_loss():
-    events = [
-        {
-            "player_choice": "Change",
-            "event_name": "Living Wall",
-            "floor": 5,
-            "max_hp_loss": 275,
-        },
-    ]
-    out = parse_events(events)
-    print(out)
-    out = out[5]
-    assert out[2:7] == ("DECREASE", "2XX", "7X", "5", "MAX HEALTH")
-
-
-def test_relics_obtained():
-    events = [
-        {
-            "player_choice": "Change",
-            "event_name": "Living Wall",
-            "floor": 5,
-            "relics_obtained": ["Relic obtained 1", "Relic obtained 2"],
-        }
-    ]
-    out = parse_events(events)
-    out = out[5]
-    assert out[2:4] == ("ACQUIRE", "Relic obtained 1")
-
-
-def test_relics_lost():
-    events = [
-        {
-            "player_choice": "Change",
-            "event_name": "Living Wall",
-            "floor": 5,
-            "relics_lost": ["Relic lost 1", "Relic lost 2"],
-        }
-    ]
-    out = parse_events(events)
-    out = out[5]
-    print(out)
-    assert out[2:4] == ("REMOVE", "Relic lost 1")
-
-
-def test_acquire_potion():
-    events = [
-        {
-            "player_choice": "Change",
-            "event_name": "Living Wall",
-            "floor": 5,
-            "potions_obtained": ["Potion obtained 1", "Potion obtained 2"],
-        }
-    ]
-    out = parse_events(events)
-    out = out[5]
-    print(out)
-    assert out[2:4] == ("ACQUIRE", "Potion obtained 1")
 
 
 def test_parse_campfire_choices():
@@ -503,3 +497,85 @@ class TestStandardizeStrikesAndDefends:
         card = "Unrelated"
         card = standardize_strikes_and_defends(card)
         assert card == "Unrelated"
+
+
+class TestGetCharacterToken:
+    @pytest.mark.parametrize(
+        "character",
+        [
+            "IRONCLAD",
+            "DEFECT",
+            "THE_SILENT",
+            "WATCHER",
+        ],
+    )
+    def test_get_character_token_valid_character(self, character):
+        data = {"character_chosen": character}
+        assert get_character_token(data) == (character,)
+
+    def test_get_character_token_invalid_character(self):
+        data = {"character_chosen": "invalid"}
+        with pytest.raises(ValueError):
+            get_character_token(data)
+
+    def test_get_character_token_non_dict_input(self):
+        data = "not a dict"
+        with pytest.raises(TypeError):
+            get_character_token(data)
+
+    def test_get_character_token_non_str_character_chosen(self):
+        data = {"character_chosen": 123}
+        with pytest.raises(TypeError):
+            get_character_token(data)
+
+    def test_get_character_token_missing_character_chosen(self):
+        data = {}
+        with pytest.raises(ValueError):
+            get_character_token(data)
+
+
+class TestGetAscensionTokens:
+    @pytest.mark.parametrize(
+        "data,expected",
+        [
+            (({"is_ascension_mode": False}), ()),
+            (
+                {"is_ascension_mode": True, "ascension_level": 1},
+                ("ASCENSION MODE", "1"),
+            ),
+            (
+                {"is_ascension_mode": True, "ascension_level": 15},
+                ("ASCENSION MODE", "1X", "5"),
+            ),
+        ],
+    )
+    def test_get_ascension_token(self, data, expected):
+        assert get_ascension_tokens(data) == expected
+
+    def test_get_ascension_token_ascension_mode_non_bool(self):
+        data = {"is_ascension_mode": 0}
+        assert get_ascension_tokens(data) == ()
+
+    def test_get_ascension_tokens_non_dict_input(self):
+        data = "not a dict"
+        with pytest.raises(TypeError):
+            get_ascension_tokens(data)
+
+    def test_get_ascension_tokens_non_digit_ascension_level(self):
+        data = {"is_ascension_mode": True, "ascension_level": "a"}
+        with pytest.raises(ValueError):
+            get_ascension_tokens(data)
+
+    def test_get_ascension_tokens_missing_ascension_level(self):
+        data = {"is_ascension_mode": True}
+        with pytest.raises(ValueError):
+            get_ascension_tokens(data)
+
+    def test_get_ascension_tokens_non_int_or_str_ascension_level(self):
+        data = {"is_ascension_mode": True, "ascension_level": [1, 2, 3]}
+        with pytest.raises(TypeError):
+            get_ascension_tokens(data)
+
+    def test_get_ascension_tokens_valid_input(self):
+        data = {"is_ascension_mode": True, "ascension_level": 15}
+        assert get_ascension_tokens(data) == ("ASCENSION MODE", "1X", "5")
