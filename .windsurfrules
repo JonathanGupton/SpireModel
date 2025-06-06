@@ -1,0 +1,33 @@
+# Python Docstring Format Rule
+Rule:
+All Python docstrings must use the Numpydoc format, including the following sections as appropriate:
+
+A concise summary line describing the function/class/module.
+
+Parameters section, listing each parameter, its type, and a short description.
+
+Returns section, describing the return value(s) and their types.
+
+Provide example tests in the docstring when possible.
+
+Example:
+
+```python
+def tokenize_event_relic(relic: str) -> tuple[str, ...]:
+    """
+    Tokenizes a single relic obtained from an event.
+
+    Parameters
+    ----------
+    relic : str
+        Name of the relic obtained.
+
+    Returns
+    -------
+    tuple[str, ...]
+        Tuple of tokens, where the first token is "ACQUIRE" and the second token
+        is the relic name.
+    """
+```
+Enforcement:
+All new and updated docstrings must follow this format. Docstrings not matching this structure should be updated to comply.
