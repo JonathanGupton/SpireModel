@@ -447,82 +447,111 @@ def get_ascension_tokens(data: Dict[str, Any]) -> Tuple[str, ...]:
         raise
 
 
+STARTING_CARDS = {
+    "IRONCLAD": (
+        "ACQUIRE",
+        "Strike",
+        "ACQUIRE",
+        "Strike",
+        "ACQUIRE",
+        "Strike",
+        "ACQUIRE",
+        "Strike",
+        "ACQUIRE",
+        "Strike",
+        "ACQUIRE",
+        "Defend",
+        "ACQUIRE",
+        "Defend",
+        "ACQUIRE",
+        "Defend",
+        "ACQUIRE",
+        "Defend",
+        "ACQUIRE",
+        "Bash",
+    ),
+    "DEFECT": (
+        "ACQUIRE",
+        "Strike",
+        "ACQUIRE",
+        "Strike",
+        "ACQUIRE",
+        "Strike",
+        "ACQUIRE",
+        "Strike",
+        "ACQUIRE",
+        "Defend",
+        "ACQUIRE",
+        "Defend",
+        "ACQUIRE",
+        "Defend",
+        "ACQUIRE",
+        "Defend",
+        "ACQUIRE",
+        "Zap",
+        "ACQUIRE",
+        "Dualcast",
+    ),
+    "THE_SILENT": (
+        "ACQUIRE",
+        "Strike",
+        "ACQUIRE",
+        "Strike",
+        "ACQUIRE",
+        "Strike",
+        "ACQUIRE",
+        "Strike",
+        "ACQUIRE",
+        "Strike",
+        "ACQUIRE",
+        "Defend",
+        "ACQUIRE",
+        "Defend",
+        "ACQUIRE",
+        "Defend",
+        "ACQUIRE",
+        "Defend",
+        "ACQUIRE",
+        "Defend",
+        "ACQUIRE",
+        "Survivor",
+        "ACQUIRE",
+        "Neutralize",
+    ),
+    "WATCHER": (
+        "ACQUIRE",
+        "Strike",
+        "ACQUIRE",
+        "Strike",
+        "ACQUIRE",
+        "Strike",
+        "ACQUIRE",
+        "Strike",
+        "ACQUIRE",
+        "Defend",
+        "ACQUIRE",
+        "Defend",
+        "ACQUIRE",
+        "Defend",
+        "ACQUIRE",
+        "Defend",
+        "ACQUIRE",
+        "Eruption",
+        "ACQUIRE",
+        "Vigilance",
+    ),
+}
+
+
 def get_starting_cards(data: Dict[str, Any]) -> Tuple[str, ...]:
     if not isinstance(data, dict):
         raise TypeError(f"Input 'data' must be a dict, got {type(data)}")
-    try:
-        character = data["character_chosen"]
-        if not isinstance(
-            character, str
-        ):  # Should be caught by get_character_token if used prior, but good here too
-            raise TypeError(
-                f"Expected string for 'character_chosen', got {type(character)}"
-            )
-        if character not in CHARACTERS:
-            logger.error(
-                f"Unknown character '{character}' found when getting starting cards. Known: {CHARACTERS}"
-            )
-            raise ValueError(
-                f"Character '{character}' not found in known CHARACTERS: {CHARACTERS}"
-            )
+    character = data.get("character_chosen", "")
+    cards = STARTING_CARDS.get(character, "")
+    if not cards:
+        raise TypeError(f"Character not found {character}")
 
-        logger.debug(f"Determining starting cards for: {character}")
-        card_counts: Tuple[Tuple[str, int], ...]
-        if character == "IRONCLAD":
-            card_counts = (("Strike", 5), ("Defend", 4), ("Bash", 1))
-        elif character == "DEFECT":
-            card_counts = (("Strike", 4), ("Defend", 4), ("Zap", 1), ("Dualcast", 1))
-        elif character == "THE_SILENT":
-            card_counts = (
-                ("Strike", 5),
-                ("Defend", 5),
-                ("Survivor", 1),
-                ("Neutralize", 1),
-            )
-        elif character == "WATCHER":
-            card_counts = (
-                ("Strike", 4),
-                ("Defend", 4),
-                ("Eruption", 1),
-                ("Vigilance", 1),
-            )
-        else:  # Should not be reached if CHARACTERS check is exhaustive
-            logger.error(
-                f"Logic error: Character '{character}' passed CHARACTERS check but has no defined starting cards."
-            )
-            raise ValueError(f"No starting cards defined for character: {character}")
-
-        tokens_list: List[str] = []
-        for card_name, count in card_counts:
-            for _ in range(count):
-                try:
-                    # Starting cards are never upgraded, so tokenize_card will return (card_name,)
-                    base_card_tokens = tokenize_card(
-                        card_name
-                    )  # Should just be (card_name,)
-                    tokens_list.append(acquire(base_card_tokens[0]))
-                except Exception as e:  # Broad exception for tokenize_card or acquire
-                    logger.error(
-                        f"Failed to tokenize or acquire starting card '{card_name}': {e}"
-                    )
-                    raise ValueError(
-                        f"Error processing starting card {card_name}"
-                    ) from e
-
-        logger.info(
-            f"Generated {len(tokens_list)} starting card tokens for {character}."
-        )
-        return tuple(tokens_list)
-
-    except KeyError:
-        logger.error("'character_chosen' key not found in data for starting cards.")
-        raise ValueError("Missing 'character_chosen' in input data")
-    except (TypeError, ValueError) as e:  # Catch our specific raises
-        logger.error(f"Error getting starting cards: {e}")
-        raise
-    except Exception as e:  # Catch unexpected errors
-        logger.exception(f"Unexpected error getting starting cards for data: {data}")
-        raise
+    return cards
 
 
 def get_starting_relics(data: Dict[str, Any]) -> Tuple[str, ...]:

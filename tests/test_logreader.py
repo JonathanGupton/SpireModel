@@ -1,7 +1,9 @@
 import pytest
 
+from SpireModel.logreader import STARTING_CARDS
 from SpireModel.logreader import get_ascension_tokens
 from SpireModel.logreader import get_character_token
+from SpireModel.logreader import get_starting_cards
 from SpireModel.logreader import parse_campfire_choices
 from SpireModel.logreader import parse_events
 from SpireModel.logreader import _tokenize_into_masked_digits
@@ -579,3 +581,39 @@ class TestGetAscensionTokens:
     def test_get_ascension_tokens_valid_input(self):
         data = {"is_ascension_mode": True, "ascension_level": 15}
         assert get_ascension_tokens(data) == ("ASCENSION MODE", "1X", "5")
+
+
+class TestGetStartingCards:
+    @pytest.mark.parametrize(
+        "data, expected",
+        [
+            (
+                {"character_chosen": "IRONCLAD"},
+                STARTING_CARDS["IRONCLAD"],
+            ),
+            (
+                {"character_chosen": "DEFECT"},
+                STARTING_CARDS["DEFECT"],
+            ),
+            (
+                {"character_chosen": "THE_SILENT"},
+                STARTING_CARDS["THE_SILENT"],
+            ),
+            (
+                {"character_chosen": "WATCHER"},
+                STARTING_CARDS["WATCHER"],
+            ),
+        ],
+    )
+    def test_get_starting_cards_valid_character(self, data, expected):
+        assert get_starting_cards(data) == expected
+
+    def test_get_starting_cards_non_dict_input(self):
+        data = "not a dict"
+        with pytest.raises(TypeError):
+            get_starting_cards(data)
+
+    def test_non_character_value(self):
+        data = {"character_chosen": "not_a_character"}
+        with pytest.raises(TypeError):
+            get_starting_cards(data)
