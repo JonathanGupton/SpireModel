@@ -3,6 +3,8 @@ import pytest
 from SpireModel.logreader import STARTING_CARDS
 from SpireModel.logreader import get_ascension_tokens
 from SpireModel.logreader import get_character_token
+from SpireModel.logreader import get_neow_bonus
+from SpireModel.logreader import get_neow_cost
 from SpireModel.logreader import get_starting_cards
 from SpireModel.logreader import get_starting_gold
 from SpireModel.logreader import parse_campfire_choices
@@ -623,3 +625,51 @@ class TestGetStartingCards:
 class TestGetStartingGold:
     def test_get_starting_gold(self):
         assert get_starting_gold() == ("ACQUIRE", "9X", "9", "GOLD")
+
+
+class TestGetNeowBonus:
+    def test_get_neow_bonus_non_dict_input(self):
+        data = "not a dict"
+        with pytest.raises(TypeError):
+            get_neow_bonus(data)
+
+    def test_get_neow_bonus_missing_key(self):
+        data = {}
+        assert get_neow_bonus(data) == ()
+
+    def test_get_neow_bonus_non_str_value(self):
+        data = {"neow_bonus": 123}
+        with pytest.raises(TypeError):
+            get_neow_bonus(data)
+
+    def test_get_neow_bonus_empty_str_value(self):
+        data = {"neow_bonus": ""}
+        assert get_neow_bonus(data) == ()
+
+    def test_get_neow_bonus_valid_input(self):
+        data = {"neow_bonus": "Test Neow Bonus"}
+        assert get_neow_bonus(data) == ("NEOW BONUS", "Test Neow Bonus")
+
+
+class TestGetNeowCost:
+    def test_get_neow_cost_non_dict_input(self):
+        data = "not a dict"
+        with pytest.raises(TypeError):
+            get_neow_cost(data)
+
+    def test_get_neow_cost_missing_key(self):
+        data = {}
+        assert get_neow_cost(data) == ()
+
+    def test_get_neow_cost_non_str_value(self):
+        data = {"neow_cost": 123}
+        with pytest.raises(TypeError):
+            get_neow_cost(data)
+
+    def test_get_neow_cost_empty_str_value(self):
+        data = {"neow_cost": ""}
+        assert get_neow_cost(data) == ()
+
+    def test_get_neow_cost_valid_input(self):
+        data = {"neow_cost": "Test Neow Cost"}
+        assert get_neow_cost(data) == ("NEOW COST", "Test Neow Cost")
