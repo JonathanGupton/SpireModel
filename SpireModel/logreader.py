@@ -612,8 +612,7 @@ def get_starting_relics(data: Dict[str, Any]) -> Tuple[str, ...]:
 def get_starting_gold() -> Tuple[str, ...]:
     logger.info("Generating starting gold tokens (99).")
     try:
-        # Replicates tokenize_gold_gain("99")
-        return ("ACQUIRE", "9", "9", "GOLD")
+        return "ACQUIRE", *tokenize_number("99"), "GOLD"
     except Exception as e:
         logger.exception("Unexpected error generating starting gold tokens.")
         # This is extremely unlikely for hardcoded values but good for robustness
