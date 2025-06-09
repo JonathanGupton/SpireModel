@@ -4,6 +4,7 @@ from SpireModel.logreader import STARTING_CARDS
 from SpireModel.logreader import get_ascension_tokens
 from SpireModel.logreader import get_character_token
 from SpireModel.logreader import get_starting_cards
+from SpireModel.logreader import get_starting_gold
 from SpireModel.logreader import parse_campfire_choices
 from SpireModel.logreader import parse_events
 from SpireModel.logreader import _tokenize_into_masked_digits
@@ -617,3 +618,8 @@ class TestGetStartingCards:
         data = {"character_chosen": "not_a_character"}
         with pytest.raises(TypeError):
             get_starting_cards(data)
+
+
+class TestGetStartingGold:
+    def test_get_starting_gold(self):
+        assert get_starting_gold() == ("ACQUIRE", "9X", "9", "GOLD")
