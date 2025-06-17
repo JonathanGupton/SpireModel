@@ -730,3 +730,25 @@ class TestParseCardChoices:
                 "Tactician",
             ),
         }
+
+    def test_parse_card_choices_are_upgraded(self):
+        card_choices = [
+            {
+                "not_picked": ["Backflip+99", "Crippling Poison"],
+                "picked": "Accuracy+1",
+                "floor": 1,
+            },
+        ]
+        assert parse_card_choices(card_choices) == {
+            1: (
+                "ACQUIRE",
+                "Accuracy",
+                "1",
+                "SKIP",
+                "Backflip",
+                "9X",
+                "9",
+                "SKIP",
+                "Crippling Poison",
+            ),
+        }
