@@ -2051,3 +2051,63 @@ def parse_relics_obtained_by_floor(
         relic = relic_by_floor["key"]
         relics[floor] = acquire((relic,))
     return relics
+
+
+def parse_boss_relic_values(
+    boss_relic_values: dict[str, list[str] | str],
+) -> tuple[str, ...]:
+    """
+    Parse boss relic values from a run file into a tuple of tokens.
+
+    Parameters
+    ----------
+    boss_relic_values : dict[str, list[str] | str]
+        Dictionary from run file containing boss relic values.
+        Should contain "picked" and/or "not_picked" keys with string or list[str] values.
+
+    Returns
+    -------
+    tuple[str, ...]
+        Tuple of tokens representing the parsed boss relic values.
+        Tokens are either "ACQUIRE" followed by a relic name or "SKIP" followed by a relic name.
+    """
+    tokens = []
+    if picked := boss_relic_values.get("picked"):
+        tokens.extend(acquire((picked,)))
+    if not_picked := boss_relic_values.get("not_picked"):
+        for relic in not_picked:
+            tokens.extend(skip((relic,)))
+    return tuple(tokens)
+
+
+def parse_boss_relics_obtained_by_floor(
+    boss_relics: list[dict[str, list[str] | str]], path_taken: list[str]
+) -> dict[int, tuple[str, ...]]:
+    """
+    Parse boss relic values from a run file into a dictionary mapping floors to tuples of tokens.
+
+    Parameters
+    ----------
+    boss_relics : list[dict[str, list[str] | str]]
+        List of dictionaries from run file containing boss relic values.
+        Each dictionary should contain "picked" and/or "not_picked" keys with string or list[str] values.
+    path_taken : list[str]
+        List of path taken from run file.
+
+    Returns
+    -------
+    dict[int, tuple[str, ...]]
+        Dictionary mapping floors to tuples of tokens representing the parsed boss relic values.
+        Tokens are either "ACQUIRE" followed by a relic name or "SKIP" followed by a relic name.
+    """
+    boss_relics_by_floor = {}
+    relic_index = 0
+    for floor, path in enumerate(path_taken):
+        if path == "BOSS":
+            if len(boss_relics) <= relic_index:
+                break
+            relics = boss_relics[relic_index]
+            relic_index += 1
+            boss_relic_tokens = parse_boss_relic_values(relics)
+            boss_relics_by_floor[floor] = boss_relic_tokens
+    return boss_relics_by_floor
