@@ -10,6 +10,7 @@ from SpireModel.logreader import get_starting_gold
 from SpireModel.logreader import parse_campfire_choices
 from SpireModel.logreader import parse_card_choices
 from SpireModel.logreader import parse_events
+from SpireModel.logreader import parse_relics_obtained_by_floor
 from SpireModel.logreader import _tokenize_into_masked_digits
 from SpireModel.logreader import parse_floor_purchases
 from SpireModel.logreader import parse_items_purged
@@ -772,4 +773,18 @@ class TestParseCardChoices:
                 "SKIP",
                 "Crippling Poison",
             ),
+        }
+
+
+class TestRelicsObtained:
+    def test_parse_relics_obtained_by_floor(self):
+        relics_obtained = [
+            {"floor": 7, "key": "Juzu Bracelet"},
+            {"floor": 9, "key": "Mercury Hourglass"},
+            {"floor": 26, "key": "Singing Bowl"},
+        ]
+        assert parse_relics_obtained_by_floor(relics_obtained) == {
+            7: ("ACQUIRE", "Juzu Bracelet"),
+            9: ("ACQUIRE", "Mercury Hourglass"),
+            26: ("ACQUIRE", "Singing Bowl"),
         }

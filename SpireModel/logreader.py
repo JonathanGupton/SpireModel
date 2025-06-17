@@ -2040,3 +2040,14 @@ def parse_potion_usage(
         if floor in potion_acquisition:
             potion_inventory[potion_acquisition[floor]] += 1
     return potion_activity
+
+
+def parse_relics_obtained_by_floor(
+    relics_obtained: list[dict[str, int | str]],
+) -> dict[int, tuple[str, ...]]:
+    relics = {}
+    for relic_by_floor in relics_obtained:
+        floor = relic_by_floor["floor"]
+        relic = relic_by_floor["key"]
+        relics[floor] = acquire((relic,))
+    return relics
