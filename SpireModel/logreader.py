@@ -701,15 +701,14 @@ def parse_card_choices(
 
     for i, choice_event in enumerate(card_choices):
         if not isinstance(choice_event, dict):
-            logger.warning(
+            raise TypeError(
                 f"Skipping invalid card choice entry at index {i}: Expected dict, got {type(choice_event)}. Value: {choice_event}"
             )
-            continue
 
         try:
             floor_val = choice_event.get("floor")
             if floor_val is None:
-                raise ValueError("Missing 'floor' key.")
+                raise KeyError("Missing 'floor' key.")
             if not isinstance(floor_val, (int, float)):
                 raise TypeError(
                     f"Expected int/float for 'floor', got {type(floor_val)}"
@@ -722,23 +721,8 @@ def parse_card_choices(
             )  # Can be str (card name) or str ("SKIP") or None
 
             if picked_card is not None:  # if "picked" key exists
-                if not isinstance(picked_card, str):
-                    raise TypeError(
-                        f"Expected string for 'picked' card, got {type(picked_card)}"
-                    )
-                if picked_card.upper() == "SKIP":  # Standardize "skip" check
-                    logger.debug(
-                        f"Floor {floor}: Card choice explicitly skipped ('{picked_card}')."
-                    )
-                    current_event_tokens.append(
-                        skip("CARD")
-                    )  # Standard token for skipping a card choice
-                else:
-                    logger.debug(f"Floor {floor}: Picked card '{picked_card}'.")
-                    card_tokens = tokenize_card(picked_card)
-                    current_event_tokens.extend(
-                        (acquire(card_tokens[0]), *card_tokens[1:])
-                    )
+                card_tokens = tokenize_card(picked_card)
+                current_event_tokens.extend(acquire(card_tokens))
             # If "picked" key is absent, it implies a skip or no choice made/logged in that way.
 
             not_picked_list = choice_event.get("not_picked")
@@ -756,7 +740,7 @@ def parse_card_choices(
                     logger.debug(f"Floor {floor}: Not picked card '{card_str}'.")
                     card_tokens = tokenize_card(card_str)
                     current_event_tokens.extend(
-                        (skip(card_tokens[0]), *card_tokens[1:])
+                        skip(card_tokens),
                     )
 
             if (
@@ -785,14 +769,17 @@ def parse_card_choices(
             logger.error(
                 f"Missing key '{e}' in card choice entry at index {i}: {choice_event}. Skipping entry."
             )
+            raise e
         except (TypeError, ValueError) as e:
             logger.error(
                 f"Data error processing card choice entry at index {i}: {e}. Entry: {choice_event}. Skipping entry."
             )
+            raise e
         except Exception as e:
             logger.exception(
                 f"Unexpected error processing card choice entry at index {i}: {choice_event}. Skipping entry."
             )
+            raise e
 
     logger.info(
         f"Successfully processed {len(card_choices)} entries, resulting in {len(card_choices_by_floor)} floors with card choice tokens."
