@@ -13,7 +13,7 @@ battle = partial(add_word, first="BATTLE")
 event_name = partial(add_word, first="EVENT")
 go_to = partial(add_word, first="GO TO")
 player_chose = partial(add_word, first="PLAYER CHOSE")
-skip = partial(add_word, first="SKIP")
+skip = partial(add_word_tuple, first="SKIP")
 
 acquire = partial(add_word_tuple, first="ACQUIRE")
 decrease = partial(add_word_tuple, first="DECREASE")
