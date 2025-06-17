@@ -7,6 +7,8 @@ from SpireModel.logreader import get_neow_bonus
 from SpireModel.logreader import get_neow_cost
 from SpireModel.logreader import get_starting_cards
 from SpireModel.logreader import get_starting_gold
+from SpireModel.logreader import parse_boss_relic_values
+from SpireModel.logreader import parse_boss_relics_obtained_by_floor
 from SpireModel.logreader import parse_campfire_choices
 from SpireModel.logreader import parse_card_choices
 from SpireModel.logreader import parse_events
@@ -788,3 +790,210 @@ class TestRelicsObtained:
             9: ("ACQUIRE", "Mercury Hourglass"),
             26: ("ACQUIRE", "Singing Bowl"),
         }
+
+
+class TestBossRelicsObtainedByFloor:
+    def test_boss_relics_obtained_by_floor_one_boss_and_one_relic(self):
+        path_taken = [
+            "M",
+            "M",
+            "?",
+            "?",
+            "M",
+            "M",
+            "E",
+            "R",
+            "T",
+            "R",
+            "M",
+            "$",
+            "R",
+            "$",
+            "R",
+            "BOSS",
+            "M",
+            "?",
+            "?",
+            "M",
+            "?",
+            "R",
+            "M",
+            "?",
+            "T",
+            "?",
+            "M",
+            "M",
+            "E",
+            "M",
+        ]
+        boss_relics = [
+            {"not_picked": ["Astrolabe", "Runic Dome"], "picked": "Mark of Pain"}
+        ]
+        assert parse_boss_relics_obtained_by_floor(boss_relics, path_taken) == {
+            15: (
+                "ACQUIRE",
+                "Mark of Pain",
+                "SKIP",
+                "Astrolabe",
+                "SKIP",
+                "Runic Dome",
+            )
+        }
+
+    def test_boss_relics_obtained_by_floor_two_bosses_and_one_relic(self):
+        path_taken = [
+            "M",
+            "M",
+            "?",
+            "?",
+            "M",
+            "M",
+            "E",
+            "R",
+            "T",
+            "R",
+            "M",
+            "$",
+            "R",
+            "$",
+            "R",
+            "BOSS",
+            "M",
+            "?",
+            "?",
+            "M",
+            "?",
+            "R",
+            "M",
+            "?",
+            "T",
+            "?",
+            "M",
+            "M",
+            "E",
+            "M",
+            "BOSS",
+        ]
+        boss_relics = [
+            {"not_picked": ["Astrolabe", "Runic Dome"], "picked": "Mark of Pain"}
+        ]
+        assert parse_boss_relics_obtained_by_floor(boss_relics, path_taken) == {
+            15: (
+                "ACQUIRE",
+                "Mark of Pain",
+                "SKIP",
+                "Astrolabe",
+                "SKIP",
+                "Runic Dome",
+            )
+        }
+
+    def test_boss_relics_obtained_by_floor_two_bosses_and_two_relics(self):
+        path_taken = [
+            "M",
+            "M",
+            "?",
+            "?",
+            "M",
+            "M",
+            "E",
+            "R",
+            "T",
+            "R",
+            "M",
+            "$",
+            "R",
+            "$",
+            "R",
+            "BOSS",
+            "M",
+            "?",
+            "?",
+            "M",
+            "?",
+            "R",
+            "M",
+            "?",
+            "T",
+            "?",
+            "M",
+            "M",
+            "E",
+            "M",
+            "BOSS",
+        ]
+        boss_relics = [
+            {"not_picked": ["Astrolabe", "Runic Dome"], "picked": "Mark of Pain"},
+            {
+                "not_picked": ["HoveringKite", "Busted Crown", "Velvet Choker"],
+            },
+        ]
+        assert parse_boss_relics_obtained_by_floor(boss_relics, path_taken) == {
+            15: (
+                "ACQUIRE",
+                "Mark of Pain",
+                "SKIP",
+                "Astrolabe",
+                "SKIP",
+                "Runic Dome",
+            ),
+            30: (
+                "SKIP",
+                "HoveringKite",
+                "SKIP",
+                "Busted Crown",
+                "SKIP",
+                "Velvet Choker",
+            ),
+        }
+
+    def test_empty_boss_relics(self):
+        """In case the player dies before defeating the boss"""
+        path_taken = [
+            "M",
+            "?",
+            "M",
+            "?",
+            "?",
+            "R",
+            "E",
+            "M",
+            "T",
+            "M",
+            "M",
+            "$",
+            "R",
+            "M",
+            "R",
+            "BOSS",
+        ]
+        boss_relics = []
+        assert parse_boss_relics_obtained_by_floor(boss_relics, path_taken) == {}
+
+
+class TestParseBossRelicValues:
+    def test_parse_boss_relic_values(self):
+        assert parse_boss_relic_values(
+            {"not_picked": ["Astrolabe", "Runic Dome"], "picked": "Mark of Pain"}
+        ) == (
+            "ACQUIRE",
+            "Mark of Pain",
+            "SKIP",
+            "Astrolabe",
+            "SKIP",
+            "Runic Dome",
+        )
+
+    def test_parse_boss_relic_values_none_taken(self):
+        assert parse_boss_relic_values(
+            {
+                "not_picked": ["HoveringKite", "Busted Crown", "Velvet Choker"],
+            }
+        ) == (
+            "SKIP",
+            "HoveringKite",
+            "SKIP",
+            "Busted Crown",
+            "SKIP",
+            "Velvet Choker",
+        )
