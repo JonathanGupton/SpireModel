@@ -752,3 +752,24 @@ class TestParseCardChoices:
                 "Crippling Poison",
             ),
         }
+
+    def test_parse_card_choices_none_taken(self):
+        card_choices = [
+            {
+                "not_picked": ["Accuracy+1", "Backflip+99", "Crippling Poison"],
+                "floor": 1,
+            }
+        ]
+        assert parse_card_choices(card_choices) == {
+            1: (
+                "SKIP",
+                "Accuracy",
+                "1",
+                "SKIP",
+                "Backflip",
+                "9X",
+                "9",
+                "SKIP",
+                "Crippling Poison",
+            ),
+        }
