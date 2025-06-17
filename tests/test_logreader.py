@@ -8,6 +8,7 @@ from SpireModel.logreader import get_neow_cost
 from SpireModel.logreader import get_starting_cards
 from SpireModel.logreader import get_starting_gold
 from SpireModel.logreader import parse_campfire_choices
+from SpireModel.logreader import parse_card_choices
 from SpireModel.logreader import parse_events
 from SpireModel.logreader import _tokenize_into_masked_digits
 from SpireModel.logreader import parse_floor_purchases
@@ -673,3 +674,59 @@ class TestGetNeowCost:
     def test_get_neow_cost_valid_input(self):
         data = {"neow_cost": "Test Neow Cost"}
         assert get_neow_cost(data) == ("NEOW COST", "Test Neow Cost")
+
+
+class TestParseCardChoices:
+    def test_parse_card_choices_non_list_input(self):
+        card_choices = "not a list"
+        with pytest.raises(TypeError):
+            parse_card_choices(card_choices)
+
+    def test_parse_card_choices_empty_list(self):
+        card_choices = []
+        assert parse_card_choices(card_choices) == {}
+
+    def test_parse_card_choices_non_dict_element(self):
+        card_choices = [123]
+        with pytest.raises(TypeError):
+            parse_card_choices(card_choices)
+
+    def test_parse_card_choices_missing_floor(self):
+        card_choices = [{"picked": "Test Card"}]
+        with pytest.raises(KeyError):
+            parse_card_choices(card_choices)
+
+    def test_parse_card_choices_non_str_picked(self):
+        card_choices = [{"picked": 123, "floor": 1}]
+        with pytest.raises(TypeError):
+            parse_card_choices(card_choices)
+
+    def test_parse_card_choices_non_list_not_picked(self):
+        card_choices = [{"picked": "Test Card", "floor": 1, "not_picked": 123}]
+        with pytest.raises(TypeError):
+            parse_card_choices(card_choices)
+
+    def test_parse_card_choices_valid_input(self):
+        card_choices = [
+            {
+                "not_picked": ["Backflip", "Crippling Poison"],
+                "picked": "Accuracy",
+                "floor": 1,
+            },
+            {
+                "not_picked": ["Sucker Punch", "Tactician"],
+                "picked": "Infinite Blades",
+                "floor": 5,
+            },
+        ]
+        assert parse_card_choices(card_choices) == {
+            1: ("ACQUIRE", "Accuracy", "SKIP", "Backflip", "SKIP", "Crippling Poison"),
+            5: (
+                "ACQUIRE",
+                "Infinite Blades",
+                "SKIP",
+                "Sucker Punch",
+                "SKIP",
+                "Tactician",
+            ),
+        }
