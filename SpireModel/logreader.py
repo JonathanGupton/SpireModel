@@ -2045,6 +2045,21 @@ def parse_potion_usage(
 def parse_relics_obtained_by_floor(
     relics_obtained: list[dict[str, int | str]],
 ) -> dict[int, tuple[str, ...]]:
+    """
+    Parse relics obtained from a run file into a dictionary mapping floors to tuples of tokens.
+
+    Parameters
+    ----------
+    relics_obtained : list[dict[str, int | str]]
+        List of dictionaries from run file containing relic values.
+        Each dictionary should contain "floor" and "key" (relic name) with values representing the floor the relic was obtained on and the relic name, respectively.
+
+    Returns
+    -------
+    dict[int, tuple[str, ...]]
+        Dictionary mapping floors to tuples of tokens representing the parsed relic values.
+        Tokens are either "ACQUIRE" followed by a relic name or "SKIP" followed by a relic name.
+    """
     relics = {}
     for relic_by_floor in relics_obtained:
         floor = relic_by_floor["floor"]
