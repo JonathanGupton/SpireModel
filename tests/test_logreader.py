@@ -9,14 +9,14 @@ from SpireModel.logreader import get_starting_cards
 from SpireModel.logreader import get_starting_gold
 from SpireModel.logreader import parse_boss_relic_values
 from SpireModel.logreader import parse_boss_relics_obtained_by_floor
-from SpireModel.logreader import parse_campfire_choices
-from SpireModel.logreader import parse_card_choices
-from SpireModel.logreader import parse_events
+from SpireModel.logreader import parse_campfire_choices_by_floor
+from SpireModel.logreader import parse_card_choices_by_floor
+from SpireModel.logreader import parse_events_by_floor
 from SpireModel.logreader import parse_relics_obtained_by_floor
 from SpireModel.logreader import _tokenize_into_masked_digits
-from SpireModel.logreader import parse_floor_purchases
-from SpireModel.logreader import parse_items_purged
-from SpireModel.logreader import parse_potion_usage
+from SpireModel.logreader import parse_purchases_by_floor
+from SpireModel.logreader import parse_items_purged_by_floor
+from SpireModel.logreader import parse_potion_usage_by_floor
 from SpireModel.logreader import standardize_strikes_and_defends
 from SpireModel.logreader import tokenize_card
 from SpireModel.logreader import tokenize_damage_taken
@@ -34,7 +34,7 @@ def test_each_card_remove():
             "floor": 5,
         },
     ]
-    parsed = parse_events(events)
+    parsed = parse_events_by_floor(events)
     out = parsed[5]
     assert out[2:4] == ("REMOVE", "Strike")
     assert out[4:7] == ("REMOVE", "Strike", "1")
@@ -59,7 +59,7 @@ def test_each_card_upgrade():
             ],
         },
     ]
-    parsed = parse_events(events)
+    parsed = parse_events_by_floor(events)
     out = parsed[20]
     assert ("UPGRADE", "Strike") == out[2:4]
     assert ("UPGRADE", "Strike", "1") == out[4:7]
@@ -111,7 +111,7 @@ def test_parse_event():
             "relics_lost": ["Relic lost 1", "Relic lost 2"],
         }
     ]
-    out = parse_events(events)
+    out = parse_events_by_floor(events)
     print(out)
     assert out
 
@@ -158,7 +158,7 @@ class TestEventProcessing:
                 "max_hp_gain": 275,
             },
         ]
-        out = parse_events(events)
+        out = parse_events_by_floor(events)
         out = out[5]
         assert out[2:7] == ("INCREASE", "2XX", "7X", "5", "MAX HEALTH")
 
@@ -171,7 +171,7 @@ class TestEventProcessing:
                 "max_hp_loss": 275,
             },
         ]
-        out = parse_events(events)
+        out = parse_events_by_floor(events)
         print(out)
         out = out[5]
         assert out[2:7] == ("DECREASE", "2XX", "7X", "5", "MAX HEALTH")
@@ -185,7 +185,7 @@ class TestEventProcessing:
                 "relics_obtained": ["Relic obtained 1", "Relic obtained 2"],
             }
         ]
-        out = parse_events(events)
+        out = parse_events_by_floor(events)
         out = out[5]
         assert out[2:4] == ("ACQUIRE", "Relic obtained 1")
 
@@ -198,7 +198,7 @@ class TestEventProcessing:
                 "relics_lost": ["Relic lost 1", "Relic lost 2"],
             }
         ]
-        out = parse_events(events)
+        out = parse_events_by_floor(events)
         out = out[5]
         print(out)
         assert out[2:4] == ("REMOVE", "Relic lost 1")
@@ -212,7 +212,7 @@ class TestEventProcessing:
                 "potions_obtained": ["Potion obtained 1", "Potion obtained 2"],
             }
         ]
-        out = parse_events(events)
+        out = parse_events_by_floor(events)
         out = out[5]
         print(out)
         assert out[2:4] == ("ACQUIRE", "Potion obtained 1")
@@ -227,7 +227,7 @@ class TestEventProcessing:
                 "cards_obtained": ["Wallop"],
             },
         ]
-        out = parse_events(events)
+        out = parse_events_by_floor(events)
         out = out[5]
         assert out[2:4] == ("TRANSFORM", "Strike")
 
@@ -240,7 +240,7 @@ class TestEventProcessing:
                 "damage_taken": 99.0,
             },
         ]
-        out = parse_events(events)
+        out = parse_events_by_floor(events)
         out = out[5]
         assert out[2:6] == ("LOSE", "9X", "9", "HEALTH")
 
@@ -253,7 +253,7 @@ class TestEventProcessing:
                 "damage_healed": 99.0,
             },
         ]
-        out = parse_events(events)
+        out = parse_events_by_floor(events)
         out = out[5]
         assert out[2:6] == ("GAIN", "9X", "9", "HEALTH")
 
@@ -266,7 +266,7 @@ class TestEventProcessing:
                 "gold_gain": 275,
             },
         ]
-        out = parse_events(events)
+        out = parse_events_by_floor(events)
         out = out[5]
         assert out[2:7] == ("ACQUIRE", "2XX", "7X", "5", "GOLD")
 
@@ -279,7 +279,7 @@ class TestEventProcessing:
                 "gold_loss": 275,
             },
         ]
-        out = parse_events(events)
+        out = parse_events_by_floor(events)
         out = out[5]
         assert out[2:7] == ("LOSE", "2XX", "7X", "5", "GOLD")
 
@@ -362,7 +362,7 @@ def test_parse_campfire_choices():
         {"floor": 3, "key": "PURGE", "data": "Strike_B+1"},
         {"floor": 4, "key": "RECALL"},
     ]
-    parsed_choices = parse_campfire_choices(campfire_choices)
+    parsed_choices = parse_campfire_choices_by_floor(campfire_choices)
     assert len(parsed_choices) == len(campfire_choices)
     assert parsed_choices[8] == ("SMITH", "Upgrade", "Fire Breathing", "1")
     assert parsed_choices[10] == ("SMITH", "Upgrade", "Armaments")
@@ -388,7 +388,9 @@ def test_parse_floor_purchases():
         "Secret Technique",
     ]
     item_purchase_floors = [7, 7, 38, 38, 38]
-    parsed_purchases = parse_floor_purchases(items_purchased, item_purchase_floors)
+    parsed_purchases = parse_purchases_by_floor(
+        items_purchased, item_purchase_floors
+    )
     assert len(parsed_purchases) == len(set(item_purchase_floors))
     assert parsed_purchases[7] == ["ACQUIRE", "Apotheosis", "ACQUIRE", "Loop", "1"]
     assert parsed_purchases[38] == [
@@ -405,7 +407,7 @@ def test_parse_floor_purchases():
 def test_parse_items_purged():
     items_purged = ["Strike_G", "Regret", "Strike_G+1"]
     items_purged_floors = [2, 7, 20]
-    parsed_purged = parse_items_purged(items_purged, items_purged_floors)
+    parsed_purged = parse_items_purged_by_floor(items_purged, items_purged_floors)
     assert len(parsed_purged) == len(set(items_purged_floors))
     assert parsed_purged[2] == ["REMOVE", "Strike"]
     assert parsed_purged[7] == ["REMOVE", "Regret"]
@@ -422,14 +424,14 @@ def test_parse_potion_usage():
         {"floor": 30, "key": "Energy Potion"},
     ]
     potion_usage = [7, 28, 30, 31, 31]
-    potion_activity = parse_potion_usage(potions_obtained, potion_usage)
+    potion_activity = parse_potion_usage_by_floor(potions_obtained, potion_usage)
     assert potion_activity
 
 
 def test_parse_potion_usage_single_potion_acquired_then_used():
     potions_obtained = [{"floor": 6, "key": "Strength Potion"}]
     potion_usage = [7]
-    potion_activity = parse_potion_usage(potions_obtained, potion_usage)
+    potion_activity = parse_potion_usage_by_floor(potions_obtained, potion_usage)
     assert potion_activity == {7: ("POTION USED", "Strength Potion")}
 
 
@@ -439,7 +441,7 @@ def test_parse_potion_usage_two_potions_acquired_then_used():
         {"floor": 7, "key": "Dummy Potion"},
     ]
     potion_usage = [8, 8]
-    potion_activity = parse_potion_usage(potions_obtained, potion_usage)
+    potion_activity = parse_potion_usage_by_floor(potions_obtained, potion_usage)
     assert potion_activity == {
         8: ("POTION USED", "Strength Potion", "POTION USED", "Dummy Potion")
     }
@@ -452,7 +454,7 @@ def test_parse_potion_usage_three_potions_acquired_two_used():
         {"floor": 8, "key": "Dummy Potion"},
     ]
     potion_usage = [9, 9]
-    potion_activity = parse_potion_usage(potions_obtained, potion_usage)
+    potion_activity = parse_potion_usage_by_floor(potions_obtained, potion_usage)
     assert potion_activity == {
         9: (
             "POTION POTENTIALLY USED",
@@ -470,7 +472,7 @@ def test_parse_potion_usage_three_potions_acquired_two_used():
         {"floor": 8, "key": "Dummy Potion"},
     ]
     potion_usage = [9, 9]
-    potion_activity = parse_potion_usage(potions_obtained, potion_usage)
+    potion_activity = parse_potion_usage_by_floor(potions_obtained, potion_usage)
     assert potion_activity == {
         9: (
             "POTION POTENTIALLY USED",
@@ -683,31 +685,31 @@ class TestParseCardChoices:
     def test_parse_card_choices_non_list_input(self):
         card_choices = "not a list"
         with pytest.raises(TypeError):
-            parse_card_choices(card_choices)
+            parse_card_choices_by_floor(card_choices)
 
     def test_parse_card_choices_empty_list(self):
         card_choices = []
-        assert parse_card_choices(card_choices) == {}
+        assert parse_card_choices_by_floor(card_choices) == {}
 
     def test_parse_card_choices_non_dict_element(self):
         card_choices = [123]
         with pytest.raises(TypeError):
-            parse_card_choices(card_choices)
+            parse_card_choices_by_floor(card_choices)
 
     def test_parse_card_choices_missing_floor(self):
         card_choices = [{"picked": "Test Card"}]
         with pytest.raises(KeyError):
-            parse_card_choices(card_choices)
+            parse_card_choices_by_floor(card_choices)
 
     def test_parse_card_choices_non_str_picked(self):
         card_choices = [{"picked": 123, "floor": 1}]
         with pytest.raises(TypeError):
-            parse_card_choices(card_choices)
+            parse_card_choices_by_floor(card_choices)
 
     def test_parse_card_choices_non_list_not_picked(self):
         card_choices = [{"picked": "Test Card", "floor": 1, "not_picked": 123}]
         with pytest.raises(TypeError):
-            parse_card_choices(card_choices)
+            parse_card_choices_by_floor(card_choices)
 
     def test_parse_card_choices_valid_input(self):
         card_choices = [
@@ -722,7 +724,7 @@ class TestParseCardChoices:
                 "floor": 5,
             },
         ]
-        assert parse_card_choices(card_choices) == {
+        assert parse_card_choices_by_floor(card_choices) == {
             1: ("ACQUIRE", "Accuracy", "SKIP", "Backflip", "SKIP", "Crippling Poison"),
             5: (
                 "ACQUIRE",
@@ -742,7 +744,7 @@ class TestParseCardChoices:
                 "floor": 1,
             },
         ]
-        assert parse_card_choices(card_choices) == {
+        assert parse_card_choices_by_floor(card_choices) == {
             1: (
                 "ACQUIRE",
                 "Accuracy",
@@ -763,7 +765,7 @@ class TestParseCardChoices:
                 "floor": 1,
             }
         ]
-        assert parse_card_choices(card_choices) == {
+        assert parse_card_choices_by_floor(card_choices) == {
             1: (
                 "SKIP",
                 "Accuracy",

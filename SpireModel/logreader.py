@@ -652,7 +652,6 @@ def get_neow_bonus(data: Dict[str, Any]) -> Tuple[str, ...]:
 
 
 def get_neow_cost(data: Dict[str, Any]) -> Tuple[str, ...]:
-
     if not isinstance(data, dict):
         raise TypeError(f"Input 'data' must be a dict, got {type(data)}")
     try:
@@ -686,10 +685,9 @@ def get_neow_cost(data: Dict[str, Any]) -> Tuple[str, ...]:
 # --- Parsing Specific Event Lists ---
 
 
-def parse_card_choices(
+def parse_card_choices_by_floor(
     card_choices: List[Dict[str, Any]],
 ) -> Dict[int, Tuple[str, ...]]:
-
     if not isinstance(card_choices, list):
         logger.error(
             f"Invalid type for parse_card_choices: expected list, got {type(card_choices)}."
@@ -808,7 +806,7 @@ def _parse_enemy_damage_taken(battle_info: Dict[str, Any]) -> Tuple[str, ...]:
         raise
 
 
-def parse_damage_taken(
+def parse_damage_taken_by_floor(
     damage_taken_list: List[Dict[str, Any]],
 ) -> Dict[int, Tuple[str, ...]]:
     """
@@ -928,7 +926,9 @@ def parse_damage_taken(
     return damage_events_by_floor
 
 
-def parse_potions_obtained(potions: List[Dict[str, Any]]) -> Dict[int, Tuple[str, ...]]:
+def parse_potions_obtained_by_floor(
+    potions: List[Dict[str, Any]],
+) -> Dict[int, Tuple[str, ...]]:
     """
     Parse potion obtained events, mapping floor to "ACQUIRE" and potion name tokens.
 
@@ -1005,7 +1005,7 @@ def parse_potions_obtained(potions: List[Dict[str, Any]]) -> Dict[int, Tuple[str
     return potions_by_floor
 
 
-def parse_items_purchased(
+def parse_items_purchased_by_floor(
     items_purchased: List[str], item_purchase_floors: List[int]
 ) -> Dict[int, Tuple[str, ...]]:
     """
@@ -1080,7 +1080,7 @@ def parse_items_purchased(
     return items_by_floor_tuple_val
 
 
-def parse_path_per_floor(
+def parse_path_by_floor(
     path_per_floor: List[Optional[str]],
 ) -> Dict[int, Dict[int, Tuple[str, ...]]]:
     """
@@ -1676,7 +1676,7 @@ def tokenize_event_potions_obtained(potions: List[str]) -> Tuple[str, ...]:
     return tuple(all_tokens)
 
 
-def parse_events(events: List[Dict[str, Any]]) -> Dict[int, Tuple[str, ...]]:
+def parse_events_by_floor(events: List[Dict[str, Any]]) -> Dict[int, Tuple[str, ...]]:
     """
     Parse a list of event entries, each being a dictionary with specific keys,
     into a dictionary mapping the floor to the corresponding event tokens.
@@ -1902,7 +1902,7 @@ def parse_events(events: List[Dict[str, Any]]) -> Dict[int, Tuple[str, ...]]:
     return event_output
 
 
-def parse_campfire_choices(
+def parse_campfire_choices_by_floor(
     campfire_choices: list[dict[str, Any]],
 ) -> dict[int, tuple[str, ...]]:
     """
@@ -1952,7 +1952,7 @@ def parse_campfire_choices(
     return parsed_choices
 
 
-def parse_floor_purchases(
+def parse_purchases_by_floor(
     items_purchased: list[str], item_purchase_floors: list[int]
 ) -> dict[int, list[str]]:
     """
@@ -1976,7 +1976,7 @@ def parse_floor_purchases(
     return purchases
 
 
-def parse_items_purged(
+def parse_items_purged_by_floor(
     items_purged: list[str], items_purged_floors: list[int]
 ) -> dict[int, list[str]]:
     """
@@ -2000,7 +2000,7 @@ def parse_items_purged(
     return purged
 
 
-def parse_potion_usage(
+def parse_potion_usage_by_floor(
     potions_obtained: list[dict[str, int | str]], potion_usage: list[int]
 ) -> dict[int, tuple[str, ...]]:
     """
